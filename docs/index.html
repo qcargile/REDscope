@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading a REDscope crash report</title>
+<style>
+  :root {
+    --bg: #14130f;
+    --surface: #1c1b16;
+    --surface2: #23221c;
+    --line: #34322a;
+    --text: #e7e3d7;
+    --dim: #b3ae9d;
+    --accent: #7fb8d6;
+    --brand: #ff5544;
+    --mono: ui-monospace, Consolas, monospace;
+    --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+  header.site { border-bottom: 1px solid var(--line); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+  header.site .brand { font-family: var(--mono); font-size: 2rem; font-weight: 700; margin: 0 0 0.4rem; line-height: 1.2; }
+  header.site .brand .name { color: var(--brand); }
+  header.site .tagline { margin: 0; color: var(--dim); font-size: 1.02rem; }
+  nav.toc { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 2.5rem; }
+  nav.toc .toc-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); margin: 0 0 0.65rem; font-weight: 600; }
+  nav.toc ol { margin: 0; padding-left: 1.4rem; }
+  nav.toc li { margin: 0.3rem 0; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  section.doc { border-top: 1px solid var(--line); padding-top: 2rem; margin-top: 2.5rem; }
+  section.doc:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  h1, h2, h3 { color: var(--text); line-height: 1.3; font-weight: 600; }
+  h1 { font-size: 1.7rem; margin: 0 0 1rem; }
+  h2 { font-size: 1.3rem; margin: 2.2rem 0 0.85rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 1.08rem; margin: 1.7rem 0 0.6rem; color: var(--accent); }
+  p { margin: 0.85rem 0; }
+  a { color: var(--accent); }
+  strong { color: var(--text); }
+  ul, ol { margin: 0.85rem 0; padding-left: 1.5rem; }
+  li { margin: 0.4rem 0; }
+  code { font-family: var(--mono); font-size: 0.88em; background: var(--surface2); border: 1px solid var(--line); border-radius: 4px; padding: 0.08em 0.38em; color: var(--text); }
+  pre { background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.1rem; overflow-x: auto; margin: 1.1rem 0; line-height: 1.5; }
+  pre code { background: none; border: none; padding: 0; font-size: 0.85rem; white-space: pre; }
+  blockquote { margin: 1.2rem 0; padding: 0.6rem 1.1rem; border-left: 3px solid var(--brand); background: var(--surface); border-radius: 0 6px 6px 0; color: var(--dim); }
+  blockquote strong { color: var(--text); }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
+  thead { background: var(--surface2); }
+  th, td { border: 1px solid var(--line); padding: 0.55rem 0.8rem; text-align: left; vertical-align: top; }
+  th { color: var(--text); }
+  td { color: var(--dim); }
+  tbody tr:nth-child(even) { background: var(--surface); }
+  .back-top { display: inline-block; margin-top: 1.5rem; font-size: 0.82rem; color: var(--dim); text-decoration: none; font-family: var(--mono); }
+  .back-top:hover { color: var(--accent); }
+  @media (max-width: 600px) {
+    .wrap { padding: 1.5rem 1rem 4rem; }
+    header.site .brand { font-size: 1.55rem; }
+    h1 { font-size: 1.45rem; }
+    pre code { font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <h1 class="brand"><span class="name">REDscope</span></h1>
+    <p class="tagline">What each part of the <code>.crash</code> file means, and how to read it.</p>
+  </header>
+
+  <nav class="toc" aria-label="Contents">
+    <p class="toc-title">On this page</p>
+    <ol>
+      <li><a href="#getting-started">Getting started</a></li>
+      <li><a href="#how-to-read">Reading the crash report</a></li>
+      <li><a href="#common-crashes">Common crashes and fixes</a></li>
+      <li><a href="#for-mod-authors">For mod authors</a></li>
+    </ol>
+  </nav>
+
+  <section class="doc" id="getting-started">
+    <h1>Getting started</h1>
+
+    <p>REDscope is a crash reporter for Cyberpunk 2077. When the game crashes it writes one plain-text <code>.crash</code> file that names the likely culprit and records the call stacks, engine state, what the game was loading, recent log errors, and which mods changed since your last working launch.</p>
+
+    <h3>Requirements</h3>
+    <ul>
+      <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/2380">RED4ext</a></li>
+      <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/107">Cyber Engine Tweaks</a></li>
+      <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/1511">redscript</a></li>
+    </ul>
+
+    <h3>Install</h3>
+    <p>Install it through Mod Organizer 2 or Vortex like any other mod, or unzip the folders into your Cyberpunk 2077 directory. It should load ahead of any other crash-handler plugin. There is nothing to configure.</p>
+
+    <h3>Where the files go</h3>
+    <p>Each crash writes a <code>.crash</code> file (and a matching <code>.crash.json</code>) to <code>red4ext/plugins/REDscope/crashes/</code>. Under Mod Organizer 2 that lives in your <strong>Overwrite</strong> folder.</p>
+
+    <h3>Reading a crash</h3>
+    <p>Open the <code>.crash</code> file in any text editor, or open the Cyber Engine Tweaks panel in-game to read the latest one without leaving the game. Once you have the culprit, disable or roll back that mod, or attach the file when you report the crash to its author.</p>
+
+    <a class="back-top" href="#getting-started">top</a>
+  </section>
+
+  <section class="doc" id="how-to-read">
+    <h1>Reading the crash report</h1>
+
+    <p>The file is plain text, named by date and time (<code>REDscope-2026-06-23_20-10-15.crash</code>). Read it top to bottom and stop when you have what you need. The top sections usually answer it; the hex dumps near the bottom are for mod authors.</p>
+
+    <hr>
+
+    <h2>The <code>LIKELY CULPRIT</code> line</h2>
+    <p>The first line is REDscope's best guess:</p>
+    <pre><code>LIKELY CULPRIT: game (MEDIUM) - icuuc.dll!icu_65::UObject::UObject+0x1817</code></pre>
+    <p>The word in parentheses is confidence: <strong>HIGH</strong> means start with whatever it names, <strong>MEDIUM</strong> is a lead worth checking, <strong>LOW</strong> is a weak hint. The word after it is who it blames. A mod <code>.dll</code> name (for example <code>Mod ArchiveXL.dll+0x8124</code>) means that mod is the suspect.</p>
+    <p>This example says <code>game</code>, meaning the fault landed in Cyberpunk's own code or a Windows library.</p>
+    <blockquote>
+      <p><strong>"game" does not rule out a mod.</strong> Mods run through the game's code, so a mod can trigger a fault that lands in the engine. When you see <code>game</code>, check the native call stack for mod <code>.dll</code> names and check what your scripts were doing.</p>
+    </blockquote>
+    <p>The <code>CRASH ID</code> below it is a fingerprint of this specific crash. The same crash produces the same ID, which tells you whether a fix worked and is worth quoting in a bug report.</p>
+
+    <hr>
+
+    <h2>The <code>Crash</code> block</h2>
+    <pre><code>Exception : 0xC0000005 ACCESS_VIOLATION
+Fault data: write at 0x00000056C7223FD8
+            region: FREE  -&gt; unmapped; dangling ptr / garbage
+Class     : scripted</code></pre>
+    <ul>
+      <li><code>ACCESS_VIOLATION</code> is the most common type: the game used memory it wasn't allowed to.</li>
+      <li><code>region: FREE</code> means it reached for something already thrown away, not that it ran out of memory.</li>
+      <li><code>Class: scripted</code> means script code was running at the time, which points toward a mod.</li>
+    </ul>
+    <p>You don't act on the addresses. The summary you want for a bug report is the type: "access violation, dangling pointer, during scripts".</p>
+
+    <hr>
+
+    <h2>Version lines</h2>
+    <pre><code>REDscope  : 0.1.0
+RED4ext   : 1.30.0.0
+Cyberpunk : 3.0.80.51928</code></pre>
+    <p>If the Cyberpunk version doesn't match what your modlist expects, that mismatch can be the whole problem. Worth a glance after a game update.</p>
+
+    <hr>
+
+    <h2><code>LAST ACTIVE</code></h2>
+    <p>What script code was running on each thread at the crash:</p>
+    <pre><code>Scripted code (per thread):
+  [CRASHING] tid=12820   OnItemDisplayHoverOver   (-00.008s ago)
+             ...</code></pre>
+    <p>The <code>[CRASHING]</code> line is the one that died. Here it is <code>OnItemDisplayHoverOver</code>, which runs when you hover an item, so the crash happened while hovering something in a menu. Below it:</p>
+    <pre><code>Mod code on native stack (crashing thread):
+  (none - native stack contains no frames in installed mod DLLs)</code></pre>
+    <p>This says no installed mod <code>.dll</code> was directly on the crashing thread. With "hovering an item" from the line above, the likely suspect is a script or UI mod that changes item tooltips or the inventory, even though no native <code>.dll</code> showed up. Match the <code>[CRASHING]</code> name to an in-game action and try to reproduce it.</p>
+
+    <hr>
+
+    <h2><code>Live game state</code></h2>
+    <pre><code>combat                no
+menu                  Hub
+district              Watson / Northside</code></pre>
+    <p>Where you were and what you were doing, plus your graphics settings. The top few lines place the crash; the graphics list matters mainly when a setting like Frame Generation or Path Tracing is involved in a graphics or VRAM crash.</p>
+
+    <hr>
+
+    <h2><code>Mods changed since last launch</code></h2>
+    <pre><code>Last launch: 2026-06-23 19:10:38  (541 mods tracked)
+  +1 added:
+    REDscope v0.1 0.1.0.0</code></pre>
+    <p>A diff against the last time you played. If a mod was added, updated, or removed and the crashing started right after, that's your first suspect. "No changes" means an existing setup, not a new mod.</p>
+
+    <hr>
+
+    <h2><code>Native call stack</code></h2>
+    <p>The long numbered list. Skim it for one thing: mod <code>.dll</code> names. Each line is a step in the chain of code that was running, newest at the top.</p>
+    <ul>
+      <li>Lines reading <code>Cyberpunk2077.exe + 0xSOMETHING</code> are the game's own code. Only about 84 of its functions are named in the public database, so the rest show as raw offsets. That is normal, not a defect.</li>
+      <li>A mod <code>.dll</code> from a gameplay or UI mod is your lead.</li>
+      <li>The same one or two lines repeating many times means recursion: code calling itself until it ran out of room.</li>
+    </ul>
+    <p>If the only non-game names are framework DLLs (CET, RED4ext, Codeware, ArchiveXL, REDscope), the native stack won't name the culprit on its own. Fall back to <code>LAST ACTIVE</code> and the mods-changed diff.</p>
+
+    <hr>
+
+    <h2><code>Engine state (at crash)</code></h2>
+    <pre><code>GPU memory      : 6629 / 11997 MB used (budget 11229 MB)
+OOM suspected   : false</code></pre>
+    <p>This answers whether the game ran out of memory. <code>OOM suspected: true</code>, or GPU memory near the maximum, means lower your settings (texture quality, ray tracing, path tracing, frame generation) or trim heavy texture mods. That's a resource problem, not a broken mod.</p>
+
+    <hr>
+
+    <h2><code>Resource streaming at crash</code></h2>
+    <p>Game files that failed to load or were still streaming when it crashed. REDscope looks each one up in the path dictionary that ships with the mod:</p>
+    <pre><code>Failed to load (792 this session):
+  base\localization\en-us\vo\judy_sq030_f_136656bf.wem
+  0xDB8DF92FE7746657  (missing or modded path)
+  ...</code></pre>
+    <p>Base-game files resolve to a path. Anything the dictionary doesn't contain shows the hash with a label: <code>(missing or modded path)</code> for a failed load, <code>(modded or dynamic path)</code> for one still streaming. Modded asset paths can't be reversed from a hash, so on a heavy modlist expect a mix of paths and labeled hashes. When a resolved path lines up with the crash, that file's mod is worth a look.</p>
+
+    <hr>
+
+    <h2><code>Setup integrity</code></h2>
+    <p>Install problems found independently of the crash. The main one is loose files: mod files sitting directly in your game folder instead of being managed by your mod manager, which silently override your setup. If any are found they're listed here; otherwise it reads <code>(no install problems detected)</code>. The same check runs before launch through <code>tools/check-clean-install.ps1</code>, which writes a report without starting the game.</p>
+
+    <hr>
+
+    <h2><code>System</code> and <code>Installed mods</code></h2>
+    <p><code>System</code> is your hardware, drivers, and OS; check the GPU driver and free RAM if crashes are frequent. <code>Installed mods</code> is a one-line count plus your manager and profile, with the full per-mod list in the <code>.crash.json</code> next to the report. <code>Loaded modules</code> lists the actual DLLs with versions, sorted into Mod, Game, and System. Attach the <code>.json</code> when you report a crash; it's the complete modlist.</p>
+
+    <hr>
+
+    <h2>The bottom sections</h2>
+    <p>Registers, Stack memory, Process memory, and Wrap chains are detail for the mod author. <code>Wrap chains</code> is the one a player might read: it lists which mods modify the most game functions, so if the crash is in an area one of them touches, that's a hint. Attach the whole <code>.crash</code> file when reporting; the author needs these.</p>
+
+    <hr>
+
+    <h2>Where to look for what</h2>
+    <table>
+      <thead>
+        <tr><th>Question</th><th>Section</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>What's the one-line answer?</td><td><code>LIKELY CULPRIT</code></td></tr>
+        <tr><td>Did a mod I just installed do it?</td><td><code>Mods changed since last launch</code></td></tr>
+        <tr><td>What was I doing?</td><td><code>LAST ACTIVE</code> and <code>Live game state</code></td></tr>
+        <tr><td>Is a specific mod named?</td><td><code>Native call stack</code></td></tr>
+        <tr><td>Did I run out of video memory?</td><td><code>Engine state</code></td></tr>
+        <tr><td>Which mod's file failed to load?</td><td><code>Resource streaming</code></td></tr>
+        <tr><td>Loose files in my game folder?</td><td><code>Setup integrity</code></td></tr>
+      </tbody>
+    </table>
+    <p>When reporting a crash, attach the <code>.crash</code> file and the <code>.json</code> next to it. And remember that <code>Cyberpunk2077.exe + 0xNUMBERS</code> with no name is normal.</p>
+
+    <a class="back-top" href="#getting-started">top</a>
+  </section>
+
+  <section class="doc" id="common-crashes">
+    <h1>Common crashes and fixes</h1>
+    <p>REDscope matches crashes against known signatures and groups each by the kind of problem it points to. Find the entry matching your <code>LIKELY CULPRIT</code> and follow the fix.</p>
+
+    <h2>Environmental</h2>
+    <p>Resource, driver, or setup problems. The fix is settings or hardware, not disabling one mod.</p>
+
+    <h3>VRAM exhaustion</h3>
+    <p>Out of video memory: GPU memory at or near your card's total, OOM suspected. Lower texture quality, ray tracing, path tracing, and frame generation, and trim heavy texture mods.</p>
+
+    <h3>System memory exhaustion</h3>
+    <p>Out of system memory, OOM suspected. Close background apps, raise your Windows page file, reduce memory-heavy mods, add RAM if it recurs.</p>
+
+    <h3>GPU timeout (device removed)</h3>
+    <p>The driver stopped responding and Windows reset it. Update or cleanly reinstall the GPU driver, drop any overclock, lower settings, and check for overheating.</p>
+
+    <h3>GPU driver fault</h3>
+    <p>The fault landed in a GPU driver DLL (for example <code>nvwgf2umx.dll</code> or <code>amdxc64.dll</code>). Update or cleanly reinstall (DDU) the driver, remove overclocks, and roll the driver back if the crash started right after an update.</p>
+
+    <h3>Upscaler or frame-generation fault</h3>
+    <p>The fault landed in an upscaling library (<code>nvngx_dlss.dll</code>, an FSR library, <code>libxess.dll</code>). Turn off Frame Generation or switch the upscaler. If you hand-swapped DLSS or FSR DLLs, restore the versions the modlist ships.</p>
+
+    <h3>Missing required framework</h3>
+    <p>A required dependency (RED4ext, Codeware, ArchiveXL, TweakXL) wasn't loaded. Install or repair it, confirm it loaded, and check load order and version.</p>
+
+    <h2>Memory</h2>
+    <p>Corrupted or mishandled memory. A mod can cause these, but the signature describes the failure, not the culprit.</p>
+
+    <h3>Heap corruption</h3>
+    <p>Something wrote where it shouldn't have. Usually a mod writing bad data: bisect the modlist (disable half, test, narrow down) and keep frameworks current.</p>
+
+    <h3>Stack buffer overrun</h3>
+    <p>Code wrote past a stack buffer and tripped the security check. Bisect the modlist, update frameworks, and report it to the author with the <code>.crash</code> file.</p>
+
+    <h3>In-page error</h3>
+    <p>The system couldn't read a memory page from disk, often failing storage or a corrupted file. Verify the game files, check the drive's health and free space, and re-download any mod whose files may be corrupted.</p>
+
+    <h2>Engine</h2>
+    <p>The engine's own behavior, often set off by script code.</p>
+
+    <h3>Stack overflow</h3>
+    <p>Code called itself until it ran out of stack, usually shown by the same frames repeating. Use those frames and the scripted stack to find the area, then disable the mod that touches it.</p>
+
+    <h3>Tooltip or text-format crash</h3>
+    <p>The fault landed in the text library (<code>icuuc.dll</code> / <code>icuin.dll</code>) with script code running. Suspect mods that change tooltips, descriptions, or UI text. Reproduce by hovering items, then disable tooltip and inventory mods one at a time.</p>
+
+    <h2>Mod</h2>
+    <h3>Item hover or tooltip crash</h3>
+    <p>The crash fired in the item-hover code (such as <code>OnItemDisplayHoverOver</code>) with the class scripted. Almost always an inventory or tooltip mod reacting to a specific item. Hover items to find the trigger and disable tooltip mods until it stops.</p>
+
+    <h2>Unknown</h2>
+    <p>Signatures that match a situation but can't name a confident culprit.</p>
+
+    <h3>Crash during startup</h3>
+    <p>The crash happened while the game was still starting (scripts not yet loaded). Usually load order or a framework problem: confirm frameworks are installed and current, check load order, and bisect recent additions.</p>
+
+    <h3>Game freeze (hang)</h3>
+    <p>The game stopped responding, caught by the hang watchdog rather than a crash. The stuck scripted frames show the area; disable the mod that touches it. If it lines up with heavy streaming or memory pressure, treat it with the memory steps above.</p>
+
+    <a class="back-top" href="#getting-started">top</a>
+  </section>
+
+  <section class="doc" id="for-mod-authors">
+    <h1>For mod authors</h1>
+    <p>A REDscope <code>.crash</code> gives you three things without a minidump or symbol server.</p>
+
+    <h3>A call stack attributed to your module</h3>
+    <p>Every native frame is tagged with its owning module, so a fault in your DLL shows as <code>YourMod.dll + 0xOFFSET</code> instead of an anonymous address. Game frames mostly show as <code>Cyberpunk2077.exe + 0xOFFSET</code> (only about 84 engine functions are named in the RED4ext address database), so the signal is which module faulted. If your code was running, the RedScript call stack shows the scripted frame that was live on the crashing thread, even when the fault is deep in a vanilla function you wrapped.</p>
+
+    <h3>A wrap-chain scan across the load order</h3>
+    <p>REDscope scans <code>@wrapMethod</code> annotations across every installed <code>.reds</code> file and reports the wrap chains, plus a top-mods-by-wrap-count summary. If your mod and another both wrap the same vanilla method, that's visible in the report.</p>
+
+    <h3>A breadcrumb API</h3>
+    <p>REDscope keeps a ring of recent breadcrumbs and prints the last entries next to the call stacks. Add your own for the moments that matter: menu opens, feature toggles, or right before and after an operation you suspect. The tag is capped at 15 characters and the message at 111, so put the important part first. Use a short, stable mod name, and note the call does nothing when REDscope isn't installed.</p>
+    <p>RedScript (the native is <code>module REDscope</code>; <code>tag</code> is a <code>String</code>):</p>
+    <pre><code>REDscope.Crumb("MyMod", "ApplyEffect target=" + ToString(target.GetID()));</code></pre>
+    <p>CET / Lua (reach it through <code>GetMod</code>):</p>
+    <pre><code>GetMod("REDscope").Crumb("MyMod-CET", "setting toggled: " .. tostring(key))</code></pre>
+
+    <a class="back-top" href="#getting-started">top</a>
+  </section>
+
+</div>
+</body>
+</html>

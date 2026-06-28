@@ -1,0 +1,62 @@
+[
+  {
+    "name": "single-crash",
+    "summaries": [
+      { "crashId": "AAA", "looseId": "LA", "crashTimeUnix": 100, "crashClass": "native", "faultingModule": "a.dll", "faultSiteUnreliable": false, "stackModules": [{ "name": "a.dll", "hits": 1, "kind": "mod" }] }
+    ],
+    "expected": {
+      "distinctCount": 1,
+      "totalCount": 1,
+      "order": ["AAA"],
+      "counts": { "AAA": 1 },
+      "cooc": { "a.dll": 1 }
+    }
+  },
+  {
+    "name": "recurrence-and-distinct-cooccurrence",
+    "summaries": [
+      { "crashId": "AAA", "looseId": "LA", "crashTimeUnix": 100, "crashClass": "native", "faultingModule": "x.dll", "faultSiteUnreliable": false, "stackModules": [{ "name": "x.dll", "hits": 2, "kind": "mod" }, { "name": "ntdll.dll", "hits": 1, "kind": "system" }] },
+      { "crashId": "AAA", "looseId": "LA", "crashTimeUnix": 200, "crashClass": "native", "faultingModule": "x.dll", "faultSiteUnreliable": false, "stackModules": [{ "name": "x.dll", "hits": 1, "kind": "mod" }] },
+      { "crashId": "BBB", "looseId": "LB", "crashTimeUnix": 150, "crashClass": "AccessViolation", "faultingModule": "x.dll", "faultSiteUnreliable": false, "stackModules": [{ "name": "x.dll", "hits": 1, "kind": "mod" }, { "name": "y.dll", "hits": 1, "kind": "mod" }] }
+    ],
+    "expected": {
+      "distinctCount": 2,
+      "totalCount": 3,
+      "order": ["AAA", "BBB"],
+      "counts": { "AAA": 2, "BBB": 1 },
+      "cooc": { "x.dll": 2, "ntdll.dll": 1, "y.dll": 1 },
+      "looseCounts": { "LA": 1, "LB": 1 }
+    }
+  },
+  {
+    "name": "looseid-spans-distinct-crashids",
+    "summaries": [
+      { "crashId": "AAA", "looseId": "FAULT_SITE_1", "crashTimeUnix": 100, "crashClass": "native", "faultingModule": "x.dll", "faultSiteUnreliable": true, "stackModules": [{ "name": "x.dll", "hits": 1, "kind": "mod" }] },
+      { "crashId": "AAA", "looseId": "FAULT_SITE_1", "crashTimeUnix": 110, "crashClass": "native", "faultingModule": "x.dll", "faultSiteUnreliable": true, "stackModules": [{ "name": "x.dll", "hits": 1, "kind": "mod" }] },
+      { "crashId": "BBB", "looseId": "FAULT_SITE_1", "crashTimeUnix": 200, "crashClass": "native", "faultingModule": "x.dll", "faultSiteUnreliable": true, "stackModules": [{ "name": "x.dll", "hits": 1, "kind": "mod" }] },
+      { "crashId": "CCC", "looseId": "FAULT_SITE_2", "crashTimeUnix": 300, "crashClass": "native", "faultingModule": "y.dll", "faultSiteUnreliable": false, "stackModules": [{ "name": "y.dll", "hits": 1, "kind": "mod" }] }
+    ],
+    "expected": {
+      "distinctCount": 3,
+      "totalCount": 4,
+      "order": ["AAA", "BBB", "CCC"],
+      "counts": { "AAA": 2, "BBB": 1, "CCC": 1 },
+      "cooc": { "x.dll": 2, "y.dll": 1 },
+      "looseCounts": { "FAULT_SITE_1": 2, "FAULT_SITE_2": 1 }
+    }
+  },
+  {
+    "name": "recency-tiebreak-equal-count",
+    "summaries": [
+      { "crashId": "OLD", "looseId": "LO", "crashTimeUnix": 50, "crashClass": "x", "faultingModule": "o.dll", "faultSiteUnreliable": false, "stackModules": [{ "name": "o.dll", "hits": 1, "kind": "mod" }] },
+      { "crashId": "NEW", "looseId": "LN", "crashTimeUnix": 500, "crashClass": "x", "faultingModule": "n.dll", "faultSiteUnreliable": false, "stackModules": [{ "name": "n.dll", "hits": 1, "kind": "mod" }] }
+    ],
+    "expected": {
+      "distinctCount": 2,
+      "totalCount": 2,
+      "order": ["NEW", "OLD"],
+      "counts": { "NEW": 1, "OLD": 1 },
+      "cooc": { "o.dll": 1, "n.dll": 1 }
+    }
+  }
+]

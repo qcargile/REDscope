@@ -1,0 +1,355 @@
+[
+  {
+    "name": "gpu-tdr",
+    "sidecar": {
+      "schema": 2, "crashId": "AAAA1111",
+      "exception": { "code": "0x887A0005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "Unknown",
+      "engineState": null, "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-GPU-TDR", "matchIds": ["ENG-GPU-TDR"], "leadModules": [] }
+  },
+  {
+    "name": "upscaler-dll-fault",
+    "sidecar": {
+      "schema": 5, "crashId": "FFFF6661",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": { "name": "nvngx_dlss.dll", "rva": "0x1abc" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-UPSCALER-DLL-FAULT", "matchIds": ["ENG-UPSCALER-DLL-FAULT"], "leadModules": [] }
+  },
+  {
+    "name": "gpu-driver-dll-fault",
+    "sidecar": {
+      "schema": 5, "crashId": "FFFF6662",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": { "name": "nvwgf2umx.dll", "rva": "0x2def" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-GPU-DRIVER-DLL-FAULT", "matchIds": ["ENG-GPU-DRIVER-DLL-FAULT"], "leadModules": [] }
+  },
+  {
+    "name": "gpu-rt-driver-dll-fault",
+    "sidecar": {
+      "schema": 5, "crashId": "FFFF6663",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": { "name": "nvrtum64.dll", "rva": "0x705160" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-GPU-DRIVER-DLL-FAULT", "matchIds": ["ENG-GPU-DRIVER-DLL-FAULT"], "leadModules": [] }
+  },
+  {
+    "name": "gpu-shader-compiler-dll-fault",
+    "sidecar": {
+      "schema": 5, "crashId": "FFFF6664",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": { "name": "nvgpucomp64.dll", "rva": "0x1234" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-GPU-DRIVER-DLL-FAULT", "matchIds": ["ENG-GPU-DRIVER-DLL-FAULT"], "leadModules": [] }
+  },
+  {
+    "name": "oom-suspected",
+    "sidecar": {
+      "schema": 2, "crashId": "BBBB2222",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": true },
+      "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-OOM-SUSPECTED", "matchIds": ["ENG-OOM-SUSPECTED"], "leadModules": [] }
+  },
+  {
+    "name": "stack-overflow",
+    "sidecar": {
+      "schema": 2, "crashId": "CCCC3333",
+      "exception": { "code": "0xC00000FD", "address": "0x0" },
+      "faultingModule": null, "crashClass": "StackOverflow",
+      "engineState": null, "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-STACK-OVERFLOW", "matchIds": ["ENG-STACK-OVERFLOW"], "leadModules": [] }
+  },
+  {
+    "name": "mod-in-stack-combo",
+    "sidecar": {
+      "schema": 2, "crashId": "DDDD4444",
+      "exception": { "code": "0xC0000005", "address": "0x180000040" },
+      "faultingModule": { "name": "ModX.dll", "rva": "0x40" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": ["BadMod.System.OnUpdate"],
+      "stackModules": [
+        { "name": "ModX.dll", "hits": 3, "kind": "mod" },
+        { "name": "Cyberpunk2077.exe", "hits": 5, "kind": "game" }
+      ],
+      "installedMods": [{ "name": "ModX", "version": "1.0", "enabled": true }]
+    },
+    "expected": {
+      "topMatchId": "TEST-MOD-COMBO",
+      "matchIds": ["TEST-MOD-COMBO", "TEST-MOD-STACK", "TEST-MOD-SCRIPTED"],
+      "leadModules": ["ModX.dll"]
+    }
+  },
+  {
+    "name": "clean-no-match-with-lead",
+    "sidecar": {
+      "schema": 2, "crashId": "EEEE5555",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [],
+      "stackModules": [
+        { "name": "Cyberpunk2077.exe", "hits": 10, "kind": "game" },
+        { "name": "SomeMod.dll", "hits": 1, "kind": "mod" }
+      ],
+      "installedMods": []
+    },
+    "expected": { "topMatchId": null, "matchIds": [], "leadModules": ["SomeMod.dll"] }
+  },
+  {
+    "name": "schema1-old-no-stackmodules",
+    "sidecar": {
+      "schema": 1, "crashId": "FFFF6666",
+      "exception": { "code": "0x887A0005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "Unknown",
+      "scriptedFrames": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-GPU-TDR", "matchIds": ["ENG-GPU-TDR"], "leadModules": [] }
+  },
+  {
+    "name": "coverage-positive",
+    "sidecar": {
+      "schema": 2, "crashId": "11112222",
+      "exception": { "code": "0xDEAD0001", "address": "0x0" },
+      "faultingModule": null,
+      "crashClass": "TestClass",
+      "engineState": { "state": "Initialization", "oomSuspected": false },
+      "scriptedFrames": ["Foo.System.A", "Bar.System.B"],
+      "stackModules": [
+        { "name": "a.dll", "hits": 2, "kind": "mod" },
+        { "name": "b.dll", "hits": 1, "kind": "mod" }
+      ],
+      "installedMods": [{ "name": "ModY", "version": "2.0", "enabled": true }]
+    },
+    "expected": {
+      "topMatchId": "ENG-INIT-TIME-CRASH",
+      "matchIds": ["ENG-INIT-TIME-CRASH", "TEST-STACK-ALL", "TEST-SCRIPTED-ALL", "TEST-SCRIPTED-NONE", "TEST-ENGINESTATE", "TEST-INSTALLED"],
+      "leadModules": ["a.dll", "b.dll"]
+    }
+  },
+  {
+    "name": "coverage-negative",
+    "sidecar": {
+      "schema": 2, "crashId": "33334444",
+      "exception": { "code": "0xDEAD0002", "address": "0x0" },
+      "faultingModule": null,
+      "crashClass": "OtherClass",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": ["evil.System.Hack"],
+      "stackModules": [{ "name": "a.dll", "hits": 2, "kind": "mod" }],
+      "installedMods": [{ "name": "ModZ", "version": "1.0", "enabled": true }]
+    },
+    "expected": { "topMatchId": null, "matchIds": [], "leadModules": ["a.dll"] }
+  },
+  {
+    "name": "hang-freeze",
+    "sidecar": {
+      "schema": 2, "crashId": "HANG0001",
+      "exception": null, "faultingModule": null, "crashClass": "Hang",
+      "engineState": null, "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-HANG-FREEZE", "matchIds": ["ENG-HANG-FREEZE"], "leadModules": [] }
+  },
+  {
+    "name": "oom-basis-vram",
+    "sidecar": {
+      "schema": 3, "crashId": "OOMV0001",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": true, "oomBasis": "vram 7800/8192 MB" },
+      "scriptedFrames": [], "stackModules": [], "installedMods": []
+    },
+    "expected": { "topMatchId": "ENG-OOM-VRAM", "matchIds": ["ENG-OOM-VRAM", "TEST-OOM-BASIS"], "leadModules": [] }
+  },
+  {
+    "name": "tweakdb-lookup-record",
+    "sidecar": {
+      "schema": 3, "crashId": "TDBR0001",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "scripted",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "tweakDbLookups": [{ "recordName": "Items.Test1", "foundRecord": true, "tweakDbId": "0xDEADBEEF", "timestampNs": 1 }]
+    },
+    "expected": { "topMatchId": "TEST-TWEAKDB-RECORD", "matchIds": ["TEST-TWEAKDB-RECORD"], "leadModules": [] }
+  },
+  {
+    "name": "status-effect-record",
+    "sidecar": {
+      "schema": 3, "crashId": "SE000001",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "scripted",
+      "engineState": null, "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "statusEffectChanges": [{ "op": "apply", "recordName": "BaseStatusEffect.Test", "callerTag": "MyMod", "targetEntityId": "0x1", "timestampNs": 2 }]
+    },
+    "expected": { "topMatchId": "TEST-STATUS-EFFECT", "matchIds": ["TEST-STATUS-EFFECT"], "leadModules": [] }
+  },
+  {
+    "name": "find-entity-null-caller",
+    "sidecar": {
+      "schema": 3, "crashId": "FEN00001",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "scripted",
+      "engineState": null, "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "findEntityNulls": [{ "entityId": "0x1", "callerTag": "MyMod.System", "timestampNs": 3 }]
+    },
+    "expected": { "topMatchId": "TEST-FIND-ENTITY-NULL", "matchIds": ["TEST-FIND-ENTITY-NULL"], "leadModules": [] }
+  },
+  {
+    "name": "recent-delay-callback",
+    "sidecar": {
+      "schema": 3, "crashId": "DLY00001",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "scripted",
+      "engineState": null, "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "recentDelays": [{ "callbackClass": "BadMod.DelayCb", "tag": "t", "targetEntityId": "0x0", "registeredNs": 1, "fireAtNs": 2 }]
+    },
+    "expected": { "topMatchId": "TEST-DELAY-CALLBACK", "matchIds": ["TEST-DELAY-CALLBACK"], "leadModules": [] }
+  },
+  {
+    "name": "wrap-layer-mod",
+    "sidecar": {
+      "schema": 3, "crashId": "WRP00001",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "scripted",
+      "engineState": null, "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "wrapChains": [{ "methodKey": "Foo.Bar", "layers": [{ "modName": "ConflictMod", "file": "r6/scripts/foo.reds", "line": 12 }] }]
+    },
+    "expected": { "topMatchId": "TEST-WRAP-LAYER-MOD", "matchIds": ["TEST-WRAP-LAYER-MOD"], "leadModules": [] }
+  },
+  {
+    "name": "installed-mod-version-match",
+    "sidecar": {
+      "schema": 3, "crashId": "IMV00001",
+      "exception": { "code": "0xC0000005", "address": "0x0" },
+      "faultingModule": null, "crashClass": "scripted",
+      "engineState": null, "scriptedFrames": [], "stackModules": [],
+      "installedMods": [{ "name": "PinnedMod", "version": "1.0.5", "enabled": true }]
+    },
+    "expected": { "topMatchId": "TEST-INSTALLED-VERSION", "matchIds": ["TEST-INSTALLED-VERSION"], "leadModules": [] }
+  },
+  {
+    "name": "in-flight-class",
+    "sidecar": {
+      "schema": 4, "crashId": "INFL0001",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "objectsInFlight": [{ "reg": "RCX", "className": "gamedataItem_Record", "modFields": 0 }]
+    },
+    "expected": { "topMatchId": "TEST-INFLIGHT-CLASS", "matchIds": ["TEST-INFLIGHT-CLASS"], "leadModules": [] }
+  },
+  {
+    "name": "in-flight-mod-fields",
+    "sidecar": {
+      "schema": 4, "crashId": "INFL0002",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "objectsInFlight": [{ "reg": "RBX", "className": "PlayerPuppet", "modFields": 3 }]
+    },
+    "expected": { "topMatchId": "TEST-INFLIGHT-MODFIELDS", "matchIds": ["TEST-INFLIGHT-MODFIELDS"], "leadModules": [] }
+  },
+  {
+    "name": "in-flight-schema-gated-below-4",
+    "sidecar": {
+      "schema": 3, "crashId": "INFL0003",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "objectsInFlight": [{ "reg": "RCX", "className": "gamedataItem_Record", "modFields": 5 }]
+    },
+    "expected": { "topMatchId": null, "matchIds": [], "leadModules": [] }
+  },
+  {
+    "name": "curated-conflict-active",
+    "sidecar": {
+      "schema": 5, "crashId": "CONF0001",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "archiveConflicts": { "curated": { "active": [{ "mods": ["ModA", "ModB"] }], "missingDeps": [], "dbModCount": 2, "truncated": 0 } }
+    },
+    "expected": { "topMatchId": "MOD-CURATED-CONFLICT", "matchIds": ["MOD-CURATED-CONFLICT", "TEST-CONFLICT-GROUP"], "leadModules": [] }
+  },
+  {
+    "name": "curated-conflict-empty",
+    "sidecar": {
+      "schema": 5, "crashId": "CONF0002",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "archiveConflicts": { "curated": { "active": [], "missingDeps": [], "dbModCount": 0, "truncated": 0 } }
+    },
+    "expected": { "topMatchId": null, "matchIds": [], "leadModules": [] }
+  },
+  {
+    "name": "curated-conflict-schema-gated-below-5",
+    "sidecar": {
+      "schema": 4, "crashId": "CONF0003",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "archiveConflicts": { "curated": { "active": [{ "mods": ["ModA", "ModB"] }], "missingDeps": [], "dbModCount": 2, "truncated": 0 } }
+    },
+    "expected": { "topMatchId": null, "matchIds": [], "leadModules": [] }
+  },
+  {
+    "name": "setup-missing-framework",
+    "sidecar": {
+      "schema": 5, "crashId": "SETP0001",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "setupIntegrity": { "issues": [{ "kind": "missing-framework", "detail": "3 CET mod(s) installed but Cyber Engine Tweaks is not loaded." }], "truncated": 0 }
+    },
+    "expected": { "topMatchId": "ENG-SETUP-MISSING-FRAMEWORK", "matchIds": ["ENG-SETUP-MISSING-FRAMEWORK", "TEST-SETUP-ISSUES"], "leadModules": [] }
+  },
+  {
+    "name": "setup-clean",
+    "sidecar": {
+      "schema": 5, "crashId": "SETP0002",
+      "exception": { "code": "0xC0000005", "address": "0x140000500" },
+      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
+      "crashClass": "AccessViolation",
+      "engineState": { "state": "Running", "oomSuspected": false },
+      "scriptedFrames": [], "stackModules": [], "installedMods": [],
+      "setupIntegrity": { "issues": [], "truncated": 0 }
+    },
+    "expected": { "topMatchId": null, "matchIds": [], "leadModules": [] }
+  }
+]

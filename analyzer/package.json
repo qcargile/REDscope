@@ -1,0 +1,10 @@
+{
+  "name": "redscope-analyzer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "REDscope crash analyzer: shared rule engine for the CET panel (Lua) and the web paste-tool (JS).",
+  "scripts": {
+    "test": "node conformance/run.mjs"
+  }
+}
