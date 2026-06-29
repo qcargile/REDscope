@@ -57,7 +57,6 @@ TEST(ObjectsInFlight, GarbageRegistersYieldEmptySet) {
     InFlightSet set = DecodeObjectsInFlight(ctx);
     EXPECT_EQ(set.count, 0u);
     EXPECT_FALSE(set.Any());
-    EXPECT_FALSE(set.AnyWithModFields());
 }
 
 TEST(ObjectsInFlight, ZeroRegistersYieldEmptySet) {
@@ -71,13 +70,7 @@ TEST(ObjectsInFlight, HelpersReflectContents) {
     EXPECT_FALSE(set.Any());
 
     set.count = 2;
-    set.items[0].modFields = 0;
-    set.items[1].modFields = 5;
     EXPECT_TRUE(set.Any());
-    EXPECT_TRUE(set.AnyWithModFields());
-
-    set.items[1].modFields = 0;
-    EXPECT_FALSE(set.AnyWithModFields());
 }
 
 TEST(StackObjects, TryGetObjectClassNameNamesSyntheticObject) {

@@ -9,7 +9,6 @@
 #include "CuratedConflicts.h"
 #include "InstalledMods.h"
 #include "PluginMetadata.h"
-#include "ResourceLoaderSnapshot.h"
 #include "RttiSnapshot.h"
 #include "SessionHistory.h"
 #include "SetupIntegrity.h"
@@ -63,8 +62,6 @@ struct Snapshot {
 
     snap::PluginMetadata pluginMeta;
 
-    snap::RttiSnapshot rttiSnapshot;
-
     snap::GpuState gpu;
 
     snap::WrapChainTable wrapChains;
@@ -77,8 +74,6 @@ struct Snapshot {
 
     snap::EngineStateLive engineLive;
     snap::GameStateLive   gameStateLive;
-
-    snap::ResourceLoaderSnapshot resourceLoader;
 };
 
 inline const ModuleInfoFixed* FindModuleByPC(const Snapshot& s, uintptr_t pc) noexcept {

@@ -3,11 +3,8 @@
 #include "CulpritHeuristic.h"
 #include "Fingerprint.h"
 #include "JsonSidecar.h"
-#include "ResourceAtFault.h"
 #include "../Logger.h"
 #include "../Plugin.h"
-#include "../breadcrumbs/Breadcrumb.h"
-#include "../breadcrumbs/BreadcrumbStore.h"
 #include "../hooks/ScriptStack.h"
 #include "../logs/LogTailer.h"
 #include "../rtti/PointerType.h"
@@ -102,18 +99,20 @@ void EmitHeader(PreallocatedBuffer& out, const EXCEPTION_POINTERS* ep, DWORD thr
         inFlight = redscope::rtti::DecodeObjectsInFlight(*ep->ContextRecord);
     }
 
-    redscope::report::ResourceAtFaultResult resAtFault;
-    if (ep && ep->ContextRecord && code != EXCEPTION_STACK_OVERFLOW) {        // SO path runs on a depleted stack; skip the 512-slot scan
-        resAtFault = redscope::report::DecodeResourceAtFault(*ep->ContextRecord, snapshot);
-    }
-    redscope::report::SetLastResourceAtFault(resAtFault);
+    ModStackFrame modFrames[4] = {};
+    size_t modFrameCount = GatherModFramesOnStack(ep, snapshot, modFrames, 4);
+    const char* modOnStackName = modFrameCount > 0 ? modFrames[0].moduleName : nullptr;
+    uint64_t    modOnStackRva  = modFrameCount > 0
+        ? static_cast<uint64_t>(modFrames[0].pc - modFrames[0].moduleBase) : 0;
 
     auto verdict = redscope::report::ComputeVerdict(code, (uintptr_t)addr,
-                                                    snapshot, symbolName, &inFlight, &resAtFault);
+                                                    snapshot, symbolName, &inFlight,
+                                                    modOnStackName, modOnStackRva);
     redscope::report::EmitCulpritLine(out, verdict);
 
     auto fingerprint = redscope::report::ComputeFingerprint(code, (uintptr_t)addr,
-                                                            snapshot, symbolName);
+                                                            snapshot, symbolName,
+                                                            modOnStackName, modOnStackRva);
     redscope::report::SetLastFingerprint(fingerprint);
     redscope::report::EmitCrashId(out, fingerprint);
 
@@ -225,6 +224,10 @@ void EmitHeader(PreallocatedBuffer& out, const EXCEPTION_POINTERS* ep, DWORD thr
     out.Appendf("Thread    : %lu\n", threadId);
     out.Appendf("Time      : %s\n", timeBuf);
     {
+        int64_t upNs = redscope::snap::UptimeNsAtCrash();
+        if (upNs > 0) out.Appendf("Uptime    : %.1fs (process, at crash)\n", upNs / 1e9);
+    }
+    {
         char dumpDir[200] = {};
         std::tm tmv2{};
         localtime_s(&tmv2, &now);
@@ -248,37 +251,6 @@ void EmitHeader(PreallocatedBuffer& out, const EXCEPTION_POINTERS* ep, DWORD thr
     } else {
         out.Append("RED4ext   : (snapshot not yet available)\n");
         out.Append("Cyberpunk : (snapshot not yet available)\n");
-    }
-    out.Append("\n");
-}
-
-void EmitBreadcrumbs(PreallocatedBuffer& out) {
-    out.Append("--- Breadcrumbs (last 32) -----------------------------------------------------\n");
-    auto& store = redscope::GetBreadcrumbStore();
-    int64_t crashNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-
-    constexpr size_t kMax = 32;
-    redscope::Breadcrumb buf[kMax] = {};
-    size_t writeIdx = 0;
-    size_t totalSeen = 0;
-    store.ring.Snapshot([&](const redscope::Breadcrumb& b) {
-        buf[writeIdx] = b;
-        writeIdx = (writeIdx + 1) % kMax;
-        ++totalSeen;
-    });
-
-    if (totalSeen == 0) { out.Append("(none)\n\n"); return; }
-
-    const size_t count = (totalSeen < kMax) ? totalSeen : kMax;
-    const size_t startIdx = (totalSeen < kMax) ? 0 : writeIdx;
-    for (size_t i = 0; i < count; ++i) {
-        const auto& b = buf[(startIdx + i) % kMax];
-        double secsRelToCrash = (b.timestampNs - crashNs) / 1e9;
-        out.Appendf("[%+07.3fs] [%-16.*s] %.*s\n",
-                    secsRelToCrash,
-                    (int)redscope::kBreadcrumbTagLen, b.tag,
-                    (int)redscope::kBreadcrumbMsgLen, b.message);
     }
     out.Append("\n");
 }
@@ -595,12 +567,7 @@ void EmitLastActive(PreallocatedBuffer& out, const EXCEPTION_POINTERS* ep) {
         } else {
             for (uint32_t i = 0; i < stackObjs.count; ++i) {
                 const auto& o = stackObjs.items[i];
-                if (o.modFields > 0) {
-                    out.Appendf("  %s  [SP+0x%X, +%u mod field%s]\n", o.className,
-                                o.stackOffset, o.modFields, o.modFields == 1 ? "" : "s");
-                } else {
-                    out.Appendf("  %s  [SP+0x%X]\n", o.className, o.stackOffset);
-                }
+                out.Appendf("  %s  [SP+0x%X]\n", o.className, o.stackOffset);
             }
         }
         out.Append("\n");
@@ -714,20 +681,8 @@ void EmitRegisters(PreallocatedBuffer& out, const EXCEPTION_POINTERS* ep) {
                 }
                 break;
             case redscope::rtti::PointerKind::RttiObject: {
-                const Snapshot* s2 = redscope::snap::Current();
-                const redscope::snap::ClassWithScriptedFields* fc =
-                    s2 ? redscope::snap::FindScriptedFieldClass(
-                             s2->rttiSnapshot, info.className) : nullptr;
-                const char* label = "Object";
-                if (fc) {
-                    out.Appendf("%s  0x%016llX   (%s) %s  [+%u mod fields]\n",
-                                r.name, (unsigned long long)r.value,
-                                label, info.className, fc->scriptedFieldCount);
-                } else {
-                    out.Appendf("%s  0x%016llX   (%s) %s\n",
-                                r.name, (unsigned long long)r.value,
-                                label, info.className);
-                }
+                out.Appendf("%s  0x%016llX   (Object) %s\n",
+                            r.name, (unsigned long long)r.value, info.className);
                 break;
             }
             case redscope::rtti::PointerKind::String:
@@ -1032,7 +987,6 @@ struct EmitArgs_BufCrash  { PreallocatedBuffer* buf; std::chrono::system_clock::
 using EmitThunk = void(*)(const void*);
 
 void Thunk_EmitHeader          (const void* p) { auto* a = (const EmitArgs_BufEpTid*)p; EmitHeader(*a->buf, a->ep, a->tid); }
-void Thunk_EmitBreadcrumbs     (const void* p) { EmitBreadcrumbs(*((const EmitArgs_Buf*)p)->buf); }
 void Thunk_EmitSystem          (const void* p) { EmitSystem(*((const EmitArgs_Buf*)p)->buf); }
 void Thunk_EmitNativeCallstack (const void* p) { auto* a = (const EmitArgs_BufEp*)p; EmitNativeCallstack(*a->buf, a->ep); }
 void Thunk_EmitScriptCallstack (const void* p) { EmitScriptCallstack(*((const EmitArgs_Buf*)p)->buf); }
@@ -1048,7 +1002,6 @@ void Thunk_EmitLoadedModules   (const void* p) { EmitLoadedModules(*((const Emit
 void Thunk_EmitInstalledMods   (const void* p) { EmitInstalledMods(*((const EmitArgs_Buf*)p)->buf); }
 void Thunk_EmitWrapChains      (const void* p) { EmitWrapChains(*((const EmitArgs_Buf*)p)->buf); }
 void Thunk_EmitEngineState     (const void* p) { EmitEngineState(*((const EmitArgs_Buf*)p)->buf); }
-void Thunk_EmitResourceLoader  (const void* p) { EmitResourceLoaderSection(*((const EmitArgs_Buf*)p)->buf); }
 
 void LogStage(const char* label) {
     redscope::log::Warn(std::string("emit: ") + label);
@@ -1185,7 +1138,6 @@ bool WriteMinimalReport(const wchar_t* outPath, const EXCEPTION_POINTERS* ep, DW
     RunEmitSafe(buf, "last active",           &Thunk_EmitLastActive,      &aEp);
     RunEmitSafe(buf, "setup integrity",       &Thunk_EmitSetupIntegrity,  &aBuf);
     RunEmitSafe(buf, "archive conflicts",     &Thunk_EmitArchiveConflicts,&aBuf);
-    RunEmitSafe(buf, "breadcrumbs",           &Thunk_EmitBreadcrumbs,     &aBuf);
     RunEmitSafe(buf, "system",                &Thunk_EmitSystem,          &aBuf);
     RunEmitSafe(buf, "native stack",          &Thunk_EmitNativeCallstack, &aEp);
     RunEmitSafe(buf, "script stack",          &Thunk_EmitScriptCallstack, &aBuf);
@@ -1196,7 +1148,6 @@ bool WriteMinimalReport(const wchar_t* outPath, const EXCEPTION_POINTERS* ep, DW
     CheckpointFile(buf, outPath);
     RunEmitSafe(buf, "process memory",        &Thunk_EmitProcessMemory,   &aBuf);
     RunEmitSafe(buf, "engine state",          &Thunk_EmitEngineState,     &aBuf);
-    RunEmitSafe(buf, "resources loading",     &Thunk_EmitResourceLoader,  &aBuf);
     RunEmitSafe(buf, "recent logs",           &Thunk_EmitRecentLogs,      &aLogs);
     CheckpointFile(buf, outPath);
     RunEmitSafe(buf, "since last launch",     &Thunk_EmitSinceLastLaunch, &aBuf);

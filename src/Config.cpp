@@ -77,7 +77,6 @@ Config LoadConfig(const std::filesystem::path& pluginDir) {
     if (auto v = get("core.capture_all_thread_stacks"))       cfg.captureAllThreadStacks = ParseBool(*v, cfg.captureAllThreadStacks);
     if (auto v = get("core.max_crash_files"))                 cfg.maxCrashFiles = ParseUintClamped(*v, cfg.maxCrashFiles, 1, 10000);
 
-    if (auto v = get("buffers.breadcrumb_buffer_size"))       cfg.breadcrumbBufferSize = ParseUintClamped(*v, cfg.breadcrumbBufferSize, 16, 65536);
     if (auto v = get("buffers.find_entity_ring_size"))        cfg.findEntityRingSize   = ParseUintClamped(*v, cfg.findEntityRingSize, 4, 4096);
     if (auto v = get("buffers.tweakdb_ring_size"))            cfg.tweakDbRingSize      = ParseUintClamped(*v, cfg.tweakDbRingSize, 4, 4096);
     if (auto v = get("buffers.archive_ring_size"))            cfg.archiveRingSize      = ParseUintClamped(*v, cfg.archiveRingSize, 4, 4096);

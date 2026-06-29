@@ -11,6 +11,8 @@ void FreezeForCrash() noexcept;
 
 const Snapshot* Current() noexcept;
 
+int64_t UptimeNsAtCrash() noexcept;
+
 const wchar_t* GameRoot() noexcept;
 
 }

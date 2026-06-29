@@ -190,3 +190,20 @@ TEST(EmitCrashId, NoGroupingNoteWhenReliable) {
     EXPECT_NE(out.find("CRASH ID: ABCD2345"), std::string::npos);
     EXPECT_EQ(out.find("fault-site class"), std::string::npos);
 }
+
+TEST(Fingerprint, ModFrameGroupsGameUnsymbolicatedCrashes) {
+    Snapshot s{};
+    AddModule(s, 0x140000000ull, 0x10000000, "Cyberpunk2077.exe", ModuleKind::Game);
+    std::strncpy(s.cp2077BuildString, "2.21", sizeof(s.cp2077BuildString) - 1);
+    const uintptr_t faultRip = 0x140000000ull + 0x191408Cull;  // game, unsymbolicated
+    const char* mod = "ArchiveXL.dll";
+    const uint64_t rva = 0xE6E56;
+
+    auto a = ComputeFingerprint(0xC0000005u, faultRip, &s, nullptr, mod, rva);
+    auto b = ComputeFingerprint(0xC0000005u, faultRip, &s, nullptr, mod, rva);
+    EXPECT_STREQ(a.looseId,   b.looseId);    // same bug + same mod frame -> same bucket
+    EXPECT_STREQ(a.primaryId, b.primaryId);
+
+    auto noMod = ComputeFingerprint(0xC0000005u, faultRip, &s, nullptr, nullptr, 0);
+    EXPECT_STRNE(a.looseId, noMod.looseId);  // the mod frame actually participates in the id
+}

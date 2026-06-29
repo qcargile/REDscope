@@ -1,7 +1,6 @@
 #include "ObjectsInFlight.h"
 #include "../snapshot/Snapshot.h"
 #include "../snapshot/SnapshotWorker.h"
-#include "../snapshot/RttiSnapshot.h"
 #include "../util/FixedStr.h"
 #include "../util/SehGuardedRead.h"
 
@@ -36,8 +35,6 @@ InFlightSet DecodeObjectsInFlight(const CONTEXT& ctx) noexcept {
         {"R14", (uintptr_t)ctx.R14}, {"R15", (uintptr_t)ctx.R15},
     };
 
-    const Snapshot* snap = redscope::snap::Current();
-
     for (const auto& r : regs) {
         if (set.count >= kMaxInFlight) break;
 
@@ -49,12 +46,6 @@ InFlightSet DecodeObjectsInFlight(const CONTEXT& ctx) noexcept {
         InFlightObject& o = set.items[set.count];
         redscope::CopyFixed(o.reg, sizeof(o.reg), r.name);
         redscope::CopyFixed(o.className, sizeof(o.className), info.className);
-        o.modFields = 0;
-        if (snap) {
-            const snap::ClassWithScriptedFields* fc =
-                redscope::snap::FindScriptedFieldClass(snap->rttiSnapshot, info.className);
-            if (fc) o.modFields = fc->scriptedFieldCount;
-        }
         ++set.count;
     }
 
@@ -92,12 +83,6 @@ InFlightSet DecodeObjectsOnStack(const CONTEXT& ctx) noexcept {
         redscope::CopyFixed(o.reg, sizeof(o.reg), "stk");
         o.stackOffset = static_cast<uint32_t>(i * 8u);
         redscope::CopyFixed(o.className, sizeof(o.className), cls);
-        o.modFields = 0;
-        if (snap) {
-            const snap::ClassWithScriptedFields* fc =
-                redscope::snap::FindScriptedFieldClass(snap->rttiSnapshot, cls);
-            if (fc) o.modFields = fc->scriptedFieldCount;
-        }
         ++set.count;
     }
 

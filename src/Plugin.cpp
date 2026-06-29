@@ -6,7 +6,6 @@
 #include "Plugin.h"
 #include "Logger.h"
 #include "breadcrumbs/BreadcrumbApi.h"
-#include "breadcrumbs/BreadcrumbStore.h"
 #include "util/PreallocatedBuffer.h"
 #include "handler/SehHandler.h"
 #include "hooks/Hooks.h"
@@ -51,16 +50,13 @@ void Boot(RED4ext::v1::PluginHandle aHandle, const RED4ext::v1::Sdk* aSdk) {
     log::Info("Plugin dir: " + g_pluginDir.string());
 
     auto crashesDir = g_pluginDir / "crashes";
-    redscope::MainCrashBuffer().Reserve(1024 * 1024);
-    redscope::SidecarBuffer().Reserve(128 * 1024);
+    redscope::MainCrashBuffer().Reserve(redscope::kMainCrashBufferBytes);
+    redscope::SidecarBuffer().Reserve(redscope::kSidecarBufferBytes);
     redscope::handler::Arm(crashesDir);
 
     g_config = redscope::LoadConfig(g_pluginDir);
     log::Info("Config: snapshotIntervalMs=" + std::to_string(g_config.snapshotIntervalMs));
     redscope::handler::Configure(g_config.respectDebugger, g_config.terminateProcessAfterReport);
-
-    redscope::InitBreadcrumbStore();
-    redscope::Crumb(redscope::BcUser, "REDscope", "plugin_init");
 
     uint32_t enriched = redscope::snap::EnrichRecentCrashesDefaultRoot(crashesDir);
     if (enriched > 0) {
@@ -134,7 +130,7 @@ RED4EXT_C_EXPORT bool RED4EXT_CALL Main(RED4ext::v1::PluginHandle aHandle,
 RED4EXT_C_EXPORT void RED4EXT_CALL Query(RED4ext::v1::PluginInfo* aInfo) {
     aInfo->name    = L"REDscope";
     aInfo->author  = L"Quentin";
-    aInfo->version = RED4EXT_V1_SEMVER(0, 5, 0);
+    aInfo->version = RED4EXT_V1_SEMVER(0, 6, 0);
     aInfo->runtime = RED4EXT_V1_RUNTIME_VERSION_INDEPENDENT;
     aInfo->sdk     = RED4EXT_V1_SDK_VERSION_1_0_0_COMPAT_0_5_0;
 }

@@ -269,12 +269,6 @@ SetupIntegrity    g_cachedSetupIntegrity;
 int64_t           g_setupIntegrityFreshNs = 0;
 size_t            g_lastSetupModuleRawCount = 0;
 
-constexpr int64_t kRttiRefreshNs       = int64_t(30) * 60 * 1'000'000'000;
-constexpr int64_t kFirstRefreshDelayNs = int64_t(60) * 1'000'000'000;
-RttiSnapshot      g_cachedRtti;
-int64_t           g_rttiFreshNs      = 0;
-bool              g_firstRefreshDone = false;
-
 void ComputeModDiffOnce() {
     if (g_modDiffComputed) return;
     if (g_cachedInventory.mods.empty()) return;
@@ -454,35 +448,6 @@ void RefreshSetupIntegrityIfStale() {
     }
 }
 
-void RefreshRttiIfStale() {
-    if (!IsRttiReady()) return;
-    int64_t now = NowNs();
-    const bool neverWalked = (g_rttiFreshNs == 0);
-    if (!neverWalked) {
-        int64_t elapsed = now - g_rttiFreshNs;
-        int64_t gate = g_firstRefreshDone ? kRttiRefreshNs : kFirstRefreshDelayNs;
-        if (elapsed < gate) return;
-    }
-    try {
-        g_cachedRtti = CaptureRttiSnapshot();
-        g_rttiFreshNs = now;
-        ++g_cacheGen;
-        const bool isFollowUp = !neverWalked && !g_firstRefreshDone;
-        if (isFollowUp) g_firstRefreshDone = true;
-        const char* phase = neverWalked ? " (initial)"
-                          : isFollowUp  ? " (post-scc)"
-                                        : "";
-        char msg[192];
-        std::snprintf(msg, sizeof(msg),
-            "RTTI walk: %u classes, %u scripted fields across %u classes%s",
-            g_cachedRtti.totalClassesWalked,
-            g_cachedRtti.totalScriptedFields,
-            (unsigned)g_cachedRtti.classes.size(),
-            phase);
-        redscope::log::Info(msg);
-    } catch (...) {
-    }
-}
 
 void Tick() {
     if (g_crashInProgress.load(std::memory_order_acquire)) return;
@@ -521,7 +486,6 @@ void Tick() {
         }
     }
     CaptureLiveState(target.gameStateLive);
-    CaptureResourceLoaderSnapshot(target.resourceLoader);
     RefreshModuleListIfStale();
     std::memcpy(target.modules, g_cachedModuleList.modules, sizeof(target.modules));
     std::memcpy(target.moduleNames, g_cachedModuleList.moduleNames, sizeof(target.moduleNames));
@@ -530,7 +494,6 @@ void Tick() {
     target.moduleOverflow = g_cachedModuleList.moduleOverflow;
     RefreshInventoryIfStale();
     RefreshPluginMetaIfStale();
-    RefreshRttiIfStale();
     RefreshWrapChainsIfStale();
     RefreshArchiveConflictsIfStale();
     RefreshSetupIntegrityIfStale();
@@ -538,7 +501,6 @@ void Tick() {
         target.inventory        = g_cachedInventory;
         target.hardware         = g_cachedHardware;
         target.pluginMeta       = g_cachedPluginMeta;
-        target.rttiSnapshot     = g_cachedRtti;
         target.gpu              = g_cachedGpu;
         target.wrapChains       = g_cachedWrapChains;
         target.modDiff          = g_cachedModDiff;
@@ -595,6 +557,10 @@ void FreezeForCrash() noexcept {
 
 const Snapshot* Current() noexcept {
     return g_published.load(std::memory_order_acquire);
+}
+
+int64_t UptimeNsAtCrash() noexcept {
+    return g_initNs != 0 ? (NowNs() - g_initNs) : 0;
 }
 
 const wchar_t* GameRoot() noexcept {

@@ -15,8 +15,6 @@ struct InFlightSet;
 
 namespace redscope::report {
 
-struct ResourceAtFaultResult;
-
 enum class CulpritConfidence : uint8_t {
     Unknown = 0,
     Low     = 1,
@@ -46,7 +44,8 @@ CulpritVerdict ComputeVerdict(DWORD exceptionCode,
                               const Snapshot* snapshot,
                               const char* symbolName = nullptr,
                               const rtti::InFlightSet* inFlight = nullptr,
-                              const ResourceAtFaultResult* resAtFault = nullptr) noexcept;
+                              const char* modOnStackName = nullptr,
+                              uint64_t modOnStackRva = 0) noexcept;
 
 void EmitCulpritLine(PreallocatedBuffer& out, const CulpritVerdict& v);
 

@@ -2,15 +2,14 @@
 #include "Sections.h"
 #include "Fingerprint.h"
 #include "CrashClass.h"
-#include "ResourceAtFault.h"
 #include "../snapshot/Snapshot.h"
+#include "../snapshot/SnapshotWorker.h"
 #include "../snapshot/InstalledMods.h"
 #include "../util/PreallocatedBuffer.h"
 #include "../util/SehGuardedRead.h"
 #include "../hooks/ScriptStack.h"
 #include "../rtti/ObjectsInFlight.h"
 #include "../snapshot/WrapChain.h"
-#include "../breadcrumbs/BreadcrumbStore.h"
 
 #include <windows.h>
 #include <chrono>
@@ -23,7 +22,7 @@ namespace {
 constexpr uint32_t kMaxScriptedFrames = 32;
 constexpr uint32_t kStackModuleScanSlots = 512;
 constexpr size_t   kMaxStackModules = 48;
-constexpr int      kSidecarSchema = 12;
+constexpr int      kSidecarSchema = 15;
 
 struct StackModuleHit {
     uint16_t   nameIndex = 0;
@@ -277,78 +276,6 @@ void EmitSetupIntegrity(PreallocatedBuffer& out, const Snapshot* snapshot) {
     out.Appendf("], \"truncated\": %u },\n", si.truncated);
 }
 
-void EmitResourceLoader(PreallocatedBuffer& out, const Snapshot* snapshot) {
-    out.Append("  \"resourceLoader\": ");
-    if (!snapshot || !snapshot->resourceLoader.readOk) { out.Append("null,\n"); return; }
-    const auto& rl = snapshot->resourceLoader;
-    out.Appendf("{ \"readOk\": true, \"failedTotal\": %u, \"inFlightTotal\": %u, \"captured\": %u, \"failed\": [",
-                rl.failedTotal, rl.inFlightTotal, rl.entryCount);
-    bool first = true;
-    for (uint32_t i = 0; i < rl.entryCount; ++i) {
-        if (!rl.entries[i].failed) continue;
-        if (!first) out.Append(", ");
-        first = false;
-        out.Appendf("{ \"hash\": \"0x%016llX\", \"error\": %u }",
-                    static_cast<unsigned long long>(rl.entries[i].pathHash), rl.entries[i].error);
-    }
-    out.Append("], \"inFlight\": [");
-    first = true;
-    for (uint32_t i = 0; i < rl.entryCount; ++i) {
-        if (!rl.entries[i].inFlight) continue;
-        if (!first) out.Append(", ");
-        first = false;
-        out.Appendf("\"0x%016llX\"", static_cast<unsigned long long>(rl.entries[i].pathHash));
-    }
-    out.Append("] },\n");
-}
-
-void EmitResourceAtFault(PreallocatedBuffer& out) {
-    const auto& raf = GetLastResourceAtFault();
-    out.Append("  \"resourceAtFault\": { \"scanned\": ");
-    out.Append(raf.scanned ? "true" : "false");
-    out.Appendf(", \"stackHits\": %u, \"entries\": [", raf.stackHits);
-    for (uint32_t i = 0; i < raf.count; ++i) {
-        const auto& e = raf.entries[i];
-        if (i) out.Append(", ");
-        out.Appendf("{ \"hash\": \"0x%016llX\", \"failed\": %s, \"inFlight\": %s, \"viaPointer\": %s, \"reg\": ",
-                    static_cast<unsigned long long>(e.pathHash),
-                    e.failed ? "true" : "false",
-                    e.inFlight ? "true" : "false",
-                    e.viaPointer ? "true" : "false");
-        AppendJsonString(out, e.reg);
-        out.Append(" }");
-    }
-    out.Append("] },\n");
-}
-
-void EmitBreadcrumbsJson(PreallocatedBuffer& out) {
-    out.Append("  \"breadcrumbs\": [");
-    auto& store = redscope::GetBreadcrumbStore();
-    int64_t crashNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-    constexpr size_t kMax = 32;
-    redscope::Breadcrumb buf[kMax] = {};
-    size_t writeIdx = 0, totalSeen = 0;
-    store.ring.Snapshot([&](const redscope::Breadcrumb& b) {
-        buf[writeIdx] = b;
-        writeIdx = (writeIdx + 1) % kMax;
-        ++totalSeen;
-    });
-    const size_t count = (totalSeen < kMax) ? totalSeen : kMax;
-    const size_t startIdx = (totalSeen < kMax) ? 0 : writeIdx;
-    for (size_t i = 0; i < count; ++i) {
-        const auto& b = buf[(startIdx + i) % kMax];
-        if (i) out.Append(", ");
-        double secs = static_cast<double>(b.timestampNs - crashNs) / 1e9;
-        out.Appendf("{ \"relToCrashSecs\": %.3f, \"kind\": %u, \"tag\": ", secs, b.kind);
-        AppendJsonStringN(out, b.tag, BoundedLen(b.tag, sizeof(b.tag)));
-        out.Append(", \"message\": ");
-        AppendJsonStringN(out, b.message, BoundedLen(b.message, sizeof(b.message)));
-        out.Append(" }");
-    }
-    out.Append("],\n");
-}
-
 }
 
 void BuildJsonSidecar(PreallocatedBuffer& out,
@@ -415,7 +342,7 @@ void BuildJsonSidecar(PreallocatedBuffer& out,
                 AppendJsonString(out, set->items[i].reg);
                 out.Append(", \"className\": ");
                 AppendJsonString(out, set->items[i].className);
-                out.Appendf(", \"modFields\": %u }", set->items[i].modFields);
+                out.Append(" }");
             }
         }
     }
@@ -428,7 +355,7 @@ void BuildJsonSidecar(PreallocatedBuffer& out,
             if (i) out.Append(", ");
             out.Append("{ \"className\": ");
             AppendJsonString(out, stk.items[i].className);
-            out.Appendf(", \"modFields\": %u, \"sp\": %u }", stk.items[i].modFields, stk.items[i].stackOffset);
+            out.Appendf(", \"sp\": %u }", stk.items[i].stackOffset);
         }
     }
     out.Append("],\n");
@@ -490,6 +417,8 @@ void BuildJsonSidecar(PreallocatedBuffer& out,
 
     out.Appendf("  \"gameUptimeNs\": %lld,\n",
                 (long long)(snapshot ? snapshot->gameUptimeNs : 0));
+    out.Appendf("  \"uptimeNsAtCrash\": %lld,\n",
+                (long long)redscope::snap::UptimeNsAtCrash());
 
     out.Append("  \"crashClass\": ");
     AppendJsonString(out, CrashClassLabel(CurrentCrashClass()));
@@ -632,12 +561,9 @@ void BuildJsonSidecar(PreallocatedBuffer& out,
         out.Append("null,\n");
     }
 
-    EmitBreadcrumbsJson(out);
     EmitHardwareJson(out, snapshot);
     EmitSetupIntegrity(out, snapshot);
     EmitArchiveConflicts(out, snapshot);
-    EmitResourceLoader(out, snapshot);
-    EmitResourceAtFault(out);
     EmitModInventory(out, snapshot);
     out.Append("}\n");
 }
@@ -655,7 +581,6 @@ void BuildDiagnosticJson(const Snapshot* snapshot, PreallocatedBuffer& out) noex
     EmitHardwareJson(out, snapshot);
     EmitSetupIntegrity(out, snapshot);
     EmitArchiveConflicts(out, snapshot);
-    EmitResourceLoader(out, snapshot);
     EmitModInventory(out, snapshot);
     out.Append("}\n");
 }

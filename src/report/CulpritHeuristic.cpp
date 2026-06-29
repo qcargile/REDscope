@@ -1,5 +1,4 @@
 #include "CulpritHeuristic.h"
-#include "ResourceAtFault.h"
 #include "../snapshot/Snapshot.h"
 #include "../rtti/ObjectsInFlight.h"
 #include "../util/StringUtils.h"
@@ -52,13 +51,6 @@ void FormatInFlight(const rtti::InFlightSet* inFlight, char* out, size_t cap) no
     for (uint32_t i = 0; i < inFlight->count && shown < 3; ++i, ++shown) {
         if (shown > 0) append(", ");
         append(inFlight->items[i].className);
-        if (inFlight->items[i].modFields > 0) {
-            char mf[40];
-            std::snprintf(mf, sizeof(mf), " [+%u mod field%s]",
-                          inFlight->items[i].modFields,
-                          inFlight->items[i].modFields == 1 ? "" : "s");
-            append(mf);
-        }
     }
     if (inFlight->count > shown) {
         char more[24];
@@ -98,7 +90,8 @@ CulpritVerdict ComputeVerdict(DWORD exceptionCode,
                               const Snapshot* snapshot,
                               const char* symbolName,
                               const rtti::InFlightSet* inFlight,
-                              const ResourceAtFaultResult* resAtFault) noexcept {
+                              const char* modOnStackName,
+                              uint64_t modOnStackRva) noexcept {
     CulpritVerdict v{};
     char inFlightBuf[160] = {};
     FormatInFlight(inFlight, inFlightBuf, sizeof(inFlightBuf));
@@ -114,7 +107,7 @@ CulpritVerdict ComputeVerdict(DWORD exceptionCode,
             v.category   = CulpritCategory::Memory;
             v.confidence = CulpritConfidence::High;
             FormatInto(v.text, sizeof(v.text),
-                       "heap corruption detected - actual culprit corrupted memory earlier in the session; scan breadcrumbs and loaded mods");
+                       "heap corruption detected - actual culprit corrupted memory earlier in the session; check the loaded-mod set and recent changes");
             return v;
         case 0xC0000409:
             v.category   = CulpritCategory::Memory;
@@ -212,37 +205,38 @@ CulpritVerdict ComputeVerdict(DWORD exceptionCode,
             return v;
         }
         case ModuleKind::Game: {
-            if (resAtFault && resAtFault->Any()) {
-                v.category   = CulpritCategory::Asset;
+            if (modOnStackName && modOnStackName[0]) {
+                v.category   = CulpritCategory::Mod;
                 v.confidence = CulpritConfidence::Medium;
                 FormatInto(v.text, sizeof(v.text),
-                           "%s+0x%llX - faulted resolving a resource referenced on the crashing thread "
-                           "(see Resource streaming); a missing/edited asset or corrupt save, not a game bug",
-                           name, (unsigned long long)off);
+                           "%s+0x%llX on the crashing stack (fault surfaced in %s+0x%llX) - a mod DLL was mid-call when the game faulted; investigate it and recently-changed mods%s",
+                           modOnStackName, (unsigned long long)modOnStackRva,
+                           name, (unsigned long long)off, inFlightBuf);
                 return v;
             }
             v.category   = CulpritCategory::Game;
             v.confidence = CulpritConfidence::Medium;
-            char advisory[224] = {};
-            if (snapshot->resourceLoader.readOk &&
-                snapshot->resourceLoader.failedTotal >= 8) {        // streaming-distress floor
-                std::snprintf(advisory, sizeof(advisory),
-                              " | %u resources failed to load this session; if this reproduces on a "
-                              "specific save, suspect a missing/edited asset or corrupt save before a game bug",
-                              snapshot->resourceLoader.failedTotal);
-            }
             if (symbolName && symbolName[0]) {
                 FormatInto(v.text, sizeof(v.text),
-                           "%s!%s+0x%llX%s%s",
-                           name, symbolName, (unsigned long long)off, inFlightBuf, advisory);
+                           "%s!%s+0x%llX%s",
+                           name, symbolName, (unsigned long long)off, inFlightBuf);
             } else {
                 FormatInto(v.text, sizeof(v.text),
-                           "%s+0x%llX (unsymbolicated)%s%s",
-                           name, (unsigned long long)off, inFlightBuf, advisory);
+                           "%s+0x%llX (unsymbolicated)%s",
+                           name, (unsigned long long)off, inFlightBuf);
             }
             return v;
         }
         case ModuleKind::System: {
+            if (modOnStackName && modOnStackName[0]) {
+                v.category   = CulpritCategory::Mod;
+                v.confidence = CulpritConfidence::Medium;
+                FormatInto(v.text, sizeof(v.text),
+                           "%s+0x%llX on the crashing stack (fault surfaced in %s+0x%llX, a system module) - a mod DLL was mid-call; investigate it and recently-changed mods%s",
+                           modOnStackName, (unsigned long long)modOnStackRva,
+                           name, (unsigned long long)off, inFlightBuf);
+                return v;
+            }
             v.category   = CulpritCategory::System;
             v.confidence = CulpritConfidence::Low;
             FormatInto(v.text, sizeof(v.text),

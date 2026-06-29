@@ -10,7 +10,6 @@ namespace redscope::rtti {
 struct InFlightObject {
     char     reg[4]                          = {};
     char     className[kPointerInfoNameCap]  = {};
-    uint32_t modFields                       = 0;
     uint32_t stackOffset                     = 0;
 };
 
@@ -21,12 +20,6 @@ struct InFlightSet {
     uint32_t       count = 0;
 
     bool Any() const noexcept { return count > 0; }
-    bool AnyWithModFields() const noexcept {
-        for (uint32_t i = 0; i < count; ++i) {
-            if (items[i].modFields > 0) return true;
-        }
-        return false;
-    }
 };
 
 InFlightSet DecodeObjectsInFlight(const CONTEXT& ctx) noexcept;

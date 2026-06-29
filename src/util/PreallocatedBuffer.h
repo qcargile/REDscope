@@ -28,6 +28,9 @@ private:
     bool   overflow_ = false;
 };
 
+constexpr size_t kMainCrashBufferBytes = 1024 * 1024;
+constexpr size_t kSidecarBufferBytes   = 1024 * 1024; // holds up to kMaxInstalledMods entries as valid JSON
+
 PreallocatedBuffer& MainCrashBuffer();
 PreallocatedBuffer& SidecarBuffer();
 

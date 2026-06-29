@@ -147,7 +147,9 @@ uint64_t ComputeModSetHash(const Snapshot* snapshot) noexcept {
 CrashFingerprint ComputeFingerprint(uint32_t exceptionCode,
                                     uintptr_t faultingRip,
                                     const Snapshot* snapshot,
-                                    const char* symbolName) noexcept {
+                                    const char* symbolName,
+                                    const char* modOnStackName,
+                                    uint64_t modOnStackRva) noexcept {
     bool faultSiteUnreliable = exceptionCode == kHeapCorruption
                 || exceptionCode == kStackBufferOverrun
                 || exceptionCode == static_cast<uint32_t>(EXCEPTION_STACK_OVERFLOW);
@@ -168,6 +170,7 @@ CrashFingerprint ComputeFingerprint(uint32_t exceptionCode,
 
     const char* tail[kMaxFingerprintTail] = {};
     char        tailJoined[kMaxFingerprintTail][192] = {};
+    char        modTag[160] = {};
     size_t tailCount = 0;
     auto pushTail = [&](const char* fullName, const char* thisClass) {
         if (!fullName || tailCount >= kMaxFingerprintTail) return;
@@ -187,6 +190,11 @@ CrashFingerprint ComputeFingerprint(uint32_t exceptionCode,
             const auto& fr = ss.frames[d - 1 - i];
             pushTail(fr.fullName, fr.thisClassName);
         }
+    }
+    if (tailCount == 0 && modOnStackName && modOnStackName[0]) {
+        std::snprintf(modTag, sizeof(modTag), "%s+0x%llX",
+                      modOnStackName, (unsigned long long)modOnStackRva);
+        pushTail(modTag, nullptr);
     }
     if (tailCount == 0) {
         const scriptstack::HeartbeatSlot* slots = nullptr;

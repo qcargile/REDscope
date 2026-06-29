@@ -9,7 +9,6 @@ namespace redscope { struct Snapshot; }
 namespace redscope::report {
 
 void EmitHeader(PreallocatedBuffer& out, const EXCEPTION_POINTERS* ep, DWORD threadId);
-void EmitBreadcrumbs(PreallocatedBuffer& out);
 void EmitSystem(PreallocatedBuffer& out);
 void EmitNativeCallstack(PreallocatedBuffer& out, const EXCEPTION_POINTERS* ep);
 
@@ -38,7 +37,6 @@ void EmitWrapChains(PreallocatedBuffer& out);
 
 void EmitSetupIntegritySection(PreallocatedBuffer& out);
 void EmitArchiveConflictsSection(PreallocatedBuffer& out);
-void EmitResourceLoaderSection(PreallocatedBuffer& out);
 
 bool WriteMinimalReport(const wchar_t* outPath, const EXCEPTION_POINTERS* ep, DWORD threadId,
                         std::chrono::system_clock::time_point crashTime);

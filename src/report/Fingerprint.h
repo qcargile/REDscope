@@ -36,7 +36,9 @@ uint64_t ComputeModSetHash(const Snapshot* snapshot) noexcept;
 CrashFingerprint ComputeFingerprint(uint32_t exceptionCode,
                                     uintptr_t faultingRip,
                                     const Snapshot* snapshot,
-                                    const char* symbolName) noexcept;
+                                    const char* symbolName,
+                                    const char* modOnStackName = nullptr,
+                                    uint64_t modOnStackRva = 0) noexcept;
 
 void EmitCrashId(PreallocatedBuffer& out, const CrashFingerprint& fp) noexcept;
 

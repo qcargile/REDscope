@@ -58,7 +58,6 @@
         "recentDelayCallbackAny": { "$ref": "#/definitions/strList" },
         "wrapLayerModAny": { "$ref": "#/definitions/strList" },
         "inFlightClassAny": { "$ref": "#/definitions/strList" },
-        "inFlightClassHasModFields": { "type": "boolean" },
         "curatedConflictActive": { "type": "boolean" },
         "conflictGroupAny": { "$ref": "#/definitions/strList" },
         "setupHasIssues": { "type": "boolean" },

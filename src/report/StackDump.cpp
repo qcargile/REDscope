@@ -1,7 +1,6 @@
 #include "Sections.h"
 #include "../rtti/PointerType.h"
 #include "../rtti/HandleDetect.h"
-#include "../snapshot/RttiSnapshot.h"
 #include "../snapshot/Snapshot.h"
 #include "../snapshot/SnapshotWorker.h"
 #include "../util/SehGuardedRead.h"
@@ -240,21 +239,11 @@ void EmitStack(PreallocatedBuffer& out, const EXCEPTION_POINTERS* ep,
                 const bool probed = (i + 1 < slotCount) &&
                     ProbeHandleRefBlock(rsp + byteOffset + 8, strong, weak);
 
-                const redscope::Snapshot* snap = redscope::snap::Current();
-                const redscope::snap::ClassWithScriptedFields* fieldsCls =
-                    snap ? redscope::snap::FindScriptedFieldClass(
-                               snap->rttiSnapshot, info.className) : nullptr;
-                char annot[48] = {};
-                if (fieldsCls) {
-                    std::snprintf(annot, sizeof(annot),
-                                  "  [+%u mod fields]", fieldsCls->scriptedFieldCount);
-                }
-
                 if (probed) {
-                    out.Appendf("   (Handle<%s>) strong=%u weak=%u%s\n",
-                                info.className, strong, weak, annot);
+                    out.Appendf("   (Handle<%s>) strong=%u weak=%u\n",
+                                info.className, strong, weak);
                 } else {
-                    out.Appendf("   (Object) %s%s\n", info.className, annot);
+                    out.Appendf("   (Object) %s\n", info.className);
                 }
                 break;
             }

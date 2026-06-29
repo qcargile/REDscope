@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "../src/report/CulpritHeuristic.h"
-#include "../src/report/ResourceAtFault.h"
 #include "../src/rtti/ObjectsInFlight.h"
 #include "../src/snapshot/Snapshot.h"
 #include "../src/util/PreallocatedBuffer.h"
@@ -213,6 +212,33 @@ TEST(CulpritHeuristic, RipInGameWithSymbolIncludesName) {
     EXPECT_NE(text.find("Cyberpunk2077.exe!"),          std::string::npos);
 }
 
+TEST(CulpritHeuristic, GameFaultWithModOnStackNamesMod) {
+    Snapshot s{};
+    AddModule(s, 0x140000000ull, 0x10000000, "Cyberpunk2077.exe", ModuleKind::Game);
+
+    auto v = ComputeVerdict(EXCEPTION_ACCESS_VIOLATION, 0x140001234ull, &s, nullptr, nullptr,
+                            "ArchiveXL.dll", 0xE6E56);
+    EXPECT_EQ(v.category,   CulpritCategory::Mod);
+    EXPECT_EQ(v.confidence, CulpritConfidence::Medium);
+    std::string text(v.text);
+    EXPECT_NE(text.find("ArchiveXL.dll"),          std::string::npos);
+    EXPECT_NE(text.find("on the crashing stack"),  std::string::npos);
+    EXPECT_NE(text.find("Cyberpunk2077.exe"),      std::string::npos);
+}
+
+TEST(CulpritHeuristic, SystemFaultWithModOnStackNamesMod) {
+    Snapshot s{};
+    AddModule(s, 0x7FFD00000000ull, 0x200000, "ntdll.dll", ModuleKind::System);
+
+    auto v = ComputeVerdict(EXCEPTION_ACCESS_VIOLATION, 0x7FFD00001234ull, &s, nullptr, nullptr,
+                            "ArchiveXL.dll", 0x1A2B);
+    EXPECT_EQ(v.category,   CulpritCategory::Mod);
+    EXPECT_EQ(v.confidence, CulpritConfidence::Medium);
+    std::string text(v.text);
+    EXPECT_NE(text.find("ArchiveXL.dll"),         std::string::npos);
+    EXPECT_NE(text.find("on the crashing stack"), std::string::npos);
+}
+
 TEST(CulpritHeuristic, RipInSystemIsLowConfidence) {
     Snapshot s{};
     AddModule(s, 0x7FFD00000000ull, 0x200000, "ntdll.dll", ModuleKind::System);
@@ -243,14 +269,12 @@ TEST(CulpritHeuristic, GameRowAppendsObjectsInFlight) {
     std::strncpy(inFlight.items[0].reg, "RCX", sizeof(inFlight.items[0].reg) - 1);
     std::strncpy(inFlight.items[0].className, "gamedataItem_Record",
                  sizeof(inFlight.items[0].className) - 1);
-    inFlight.items[0].modFields = 2;
 
     auto v = ComputeVerdict(EXCEPTION_ACCESS_VIOLATION, 0x140001234ull, &s, nullptr, &inFlight);
     EXPECT_EQ(v.category, CulpritCategory::Game);
     std::string text(v.text);
     EXPECT_NE(text.find("objects in registers"),  std::string::npos);
     EXPECT_NE(text.find("gamedataItem_Record"),   std::string::npos);
-    EXPECT_NE(text.find("+2 mod fields"),         std::string::npos);
 }
 
 TEST(CulpritHeuristic, NullInFlightLeavesGameRowUnchanged) {
@@ -271,7 +295,6 @@ TEST(CulpritHeuristic, NoModuleRowAppendsObjectsInFlight) {
     std::strncpy(inFlight.items[0].reg, "RDX", sizeof(inFlight.items[0].reg) - 1);
     std::strncpy(inFlight.items[0].className, "inkVideoWidget",
                  sizeof(inFlight.items[0].className) - 1);
-    inFlight.items[0].modFields = 0;
 
     auto v = ComputeVerdict(EXCEPTION_ACCESS_VIOLATION, 0x99999999ull, &s, nullptr, &inFlight);
     EXPECT_EQ(v.category, CulpritCategory::Unknown);
@@ -289,48 +312,6 @@ TEST(CulpritHeuristic, RipInUnknownKindModule) {
     EXPECT_EQ(v.confidence, CulpritConfidence::Low);
     std::string text(v.text);
     EXPECT_NE(text.find("mystery.dll"), std::string::npos);
-}
-
-TEST(CulpritHeuristic, GameWithResourceAtFaultReclassifiesToAsset) {
-    Snapshot s{};
-    AddModule(s, 0x140000000ull, 0x10000000, "Cyberpunk2077.exe", ModuleKind::Game);
-
-    redscope::report::ResourceAtFaultResult raf{};
-    raf.scanned = true;
-    raf.count = 1;
-    raf.entries[0].pathHash = 0xABCDEF0123456789ull;
-    raf.entries[0].failed = true;
-
-    auto v = ComputeVerdict(EXCEPTION_ACCESS_VIOLATION, 0x140001234ull, &s, nullptr, nullptr, &raf);
-    EXPECT_EQ(v.category,   CulpritCategory::Asset);
-    EXPECT_EQ(v.confidence, CulpritConfidence::Medium);
-    std::string text(v.text);
-    EXPECT_NE(text.find("resource"),      std::string::npos);
-    EXPECT_NE(text.find("not a game bug"), std::string::npos);
-}
-
-TEST(CulpritHeuristic, GameWithFailedLoadsAppendsAdvisory) {
-    Snapshot s{};
-    AddModule(s, 0x140000000ull, 0x10000000, "Cyberpunk2077.exe", ModuleKind::Game);
-    s.resourceLoader.readOk      = true;
-    s.resourceLoader.failedTotal = 200;
-
-    auto v = ComputeVerdict(EXCEPTION_ACCESS_VIOLATION, 0x140001234ull, &s);
-    EXPECT_EQ(v.category, CulpritCategory::Game);
-    std::string text(v.text);
-    EXPECT_NE(text.find("failed to load this session"), std::string::npos);
-}
-
-TEST(CulpritHeuristic, GameWithFewFailedLoadsNoAdvisory) {
-    Snapshot s{};
-    AddModule(s, 0x140000000ull, 0x10000000, "Cyberpunk2077.exe", ModuleKind::Game);
-    s.resourceLoader.readOk      = true;
-    s.resourceLoader.failedTotal = 3;
-
-    auto v = ComputeVerdict(EXCEPTION_ACCESS_VIOLATION, 0x140001234ull, &s);
-    EXPECT_EQ(v.category, CulpritCategory::Game);
-    std::string text(v.text);
-    EXPECT_EQ(text.find("failed to load this session"), std::string::npos);
 }
 
 TEST(EmitCulpritLine, KnownVerdictIncludesCategoryAndConfidence) {

@@ -19,7 +19,6 @@ TEST(Config, DefaultsWhenFileMissing) {
     fs::create_directories(dir);
     auto cfg = redscope::LoadConfig(dir);
     EXPECT_TRUE(cfg.respectDebugger);
-    EXPECT_EQ(cfg.breadcrumbBufferSize, 256u);
     EXPECT_EQ(cfg.stackDumpSlotCount, 512u);
     EXPECT_EQ(cfg.testInjectCrashAfterSeconds, 0u);
 }
@@ -32,7 +31,6 @@ terminate_process_after_report = true
 capture_all_thread_stacks = false
 max_crash_files = 10
 [buffers]
-breadcrumb_buffer_size = 512
 find_entity_ring_size = 64
 tweakdb_ring_size = 8
 archive_ring_size = 8
@@ -49,7 +47,6 @@ test_inject_crash_after_seconds = 5
     EXPECT_TRUE(cfg.terminateProcessAfterReport);
     EXPECT_FALSE(cfg.captureAllThreadStacks);
     EXPECT_EQ(cfg.maxCrashFiles, 10u);
-    EXPECT_EQ(cfg.breadcrumbBufferSize, 512u);
     EXPECT_EQ(cfg.snapshotIntervalMs, 250u);
     EXPECT_EQ(cfg.stackDumpSlotCount, 1024u);
     EXPECT_EQ(cfg.testInjectCrashAfterSeconds, 5u);

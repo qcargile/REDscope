@@ -10,7 +10,6 @@ struct Config {
     bool        captureAllThreadStacks = true;
     uint32_t    maxCrashFiles = 50;
 
-    uint32_t    breadcrumbBufferSize = 256;
     uint32_t    findEntityRingSize = 32;
     uint32_t    tweakDbRingSize = 16;
     uint32_t    archiveRingSize = 16;

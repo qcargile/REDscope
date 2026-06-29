@@ -1,6 +1,6 @@
 # `.crash.json` sidecar schema
 
-Current schema: **5**.
+Current schema: **15**.
 
 The sidecar is the analyzer's primary input format. Every field below is either consumed by an analyzer rule condition OR marked `telemetry-only`. New fields should land with at least one rule that exercises them (or an annotation that they are deliberately not analyzer input).
 
@@ -25,13 +25,12 @@ The sidecar is the analyzer's primary input format. Every field below is either 
 | `recentDelays[].callbackClass` | `recentDelayCallbackAny` (added schema 3, substring) |
 | `wrapChains[].layers[].modName` | `wrapLayerModAny` (added schema 3) |
 | `objectsInFlight[].className` | `inFlightClassAny` (added schema 4) |
-| `objectsInFlight[].modFields` | `inFlightClassHasModFields` (added schema 4) |
 | `archiveConflicts.curated.active[]` | `curatedConflictActive` (bool, added schema 5) |
 | `archiveConflicts.curated.active[].mods[]` | `conflictGroupAny` (added schema 5) |
 | `setupIntegrity.issues[]` | `setupHasIssues` (bool, added schema 5) |
 | `setupIntegrity.issues[].kind` | `setupIssueKindAny` (added schema 5) |
 
-`objectsInFlight` (schema 4) is the RTTI class of every heap object REDscope could identify in the crashing thread's CPU registers at fault time, each with the count of mod-added scripted fields on that class (`modFields`). It surfaces *what* the engine was operating on when the fault PC is vanilla code — the data axis that the module/stack axes miss. `modFields > 0` is an attribution lead (some installed mod `@addField`s that class), never a verdict. Reversing a record/resource *name* from a faulting `TweakDBID`/`ResourcePath` is not possible at runtime (both are hashes with no engine-side reverse pool), so attribution here is by class identity + mod-field presence, not record ownership.
+`objectsInFlight` (schema 4) is the RTTI class of every heap object REDscope could identify in the crashing thread's CPU registers at fault time. It surfaces *what* the engine was operating on when the fault PC is vanilla code — the data axis that the module/stack axes miss. A class identified here is an attribution lead (find the mod that operates on it), never a verdict. Reversing a record/resource *name* from a faulting `TweakDBID`/`ResourcePath` is not possible at runtime (both are hashes with no engine-side reverse pool), so attribution here is by class identity, not record ownership. (Schema 15 dropped the per-object `modFields` count: it required the worker-thread RTTI property walk that raced the engine's lazy scripted-property init and crashed the game, so that walk was removed.)
 
 `setupIntegrity` (schema 5) is the result of the install-health pass: `{ issues: [{kind, detail}], truncated }`. `kind` is a stable machine tag (`missing-framework`, `plugin-load-failure`); `detail` is the human sentence. These are measured facts about the install (a framework a mod needs is not loaded, or RED4ext reported a plugin load failure), computed on the worker thread from the inventory + loaded-module list + the red4ext log — not from any crash. `missing-framework` is high-confidence (the mod genuinely does nothing without its framework). The pass deliberately omits version-floor / stale-framework detection, which would require a per-game-build floors table.
 
@@ -49,7 +48,8 @@ These fields are carried for human + paste-tool readers. They are intentionally 
 
 - `gameStateLive` — `{ key: value }` map of live Lua-pushed state (Item 5). Panel + web tool render it; no rule key (we expect users to inspect it themselves, not write rules against it).
 - `modsChangedSinceLastLaunch.{added,removed,updated}` — surface as the hero block in both UIs. No rule key today; a future rule could match on `added[].name` if recurrence shows it's worth a condition.
-- `gameUptimeNs` — total time-into-session in ns (added schema 3). Currently UI-only; a future `gameUptimeNsMax`/`Min` condition would let rules separate "always at load" from "always after an hour."
+- `gameUptimeNs` — total time-into-session in ns (added schema 3). Worker-snapshot-stamped, so it reflects the last background tick (up to ~500 ms old, and stale if the worker stalls). Currently UI-only.
+- `uptimeNsAtCrash` — process uptime in ns stamped at crash time, not by the worker (added schema 14). Unlike `gameUptimeNs` it can't go stale; a large gap between the two means the worker stopped ticking before the crash. Replaces the former `plugin_init` breadcrumb. Render-only.
 
 ## Schema-version compatibility
 

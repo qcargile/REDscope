@@ -13,7 +13,7 @@ const VALID_CONDITIONS = new Set([
   'tweakDbRecordAny', 'statusEffectRecordAny',
   'findEntityNullCallerAny', 'recentDelayCallbackAny',
   'wrapLayerModAny',
-  'inFlightClassAny', 'inFlightClassHasModFields',
+  'inFlightClassAny',
   'curatedConflictActive', 'conflictGroupAny',
   'setupHasIssues', 'setupIssueKindAny',
 ]);
@@ -124,10 +124,6 @@ export function matchRule(rule, sidecar) {
   if (m.inFlightClassAny) {
     const classes = asArray(sidecar.objectsInFlight).map((o) => lc(o && o.className));
     if (!asArray(m.inFlightClassAny).some((x) => classes.indexOf(lc(x)) !== -1)) return false;
-  }
-  if (m.inFlightClassHasModFields != null) {
-    const has = asArray(sidecar.objectsInFlight).some((o) => Number((o && o.modFields) || 0) > 0);
-    if (has !== !!m.inFlightClassHasModFields) return false;
   }
   if (m.curatedConflictActive != null) {
     const ac = sidecar.archiveConflicts;

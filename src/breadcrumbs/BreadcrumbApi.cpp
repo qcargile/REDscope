@@ -1,5 +1,4 @@
 #include "BreadcrumbApi.h"
-#include "BreadcrumbStore.h"
 #include "CrashArchive.h"
 #include "../Logger.h"
 #include "../Plugin.h"
@@ -27,7 +26,6 @@
 namespace redscope::api {
 namespace {
 
-RED4ext::CGlobalFunction* g_registeredFn = nullptr;
 RED4ext::CGlobalFunction* g_registeredFn2 = nullptr;
 RED4ext::CGlobalFunction* g_registeredFn3 = nullptr;
 RED4ext::CGlobalFunction* g_registeredFn4 = nullptr;
@@ -37,26 +35,6 @@ RED4ext::CGlobalFunction* g_registeredFn7 = nullptr;
 RED4ext::CGlobalFunction* g_registeredFn8 = nullptr;
 RED4ext::CGlobalFunction* g_registeredFn9 = nullptr;
 
-void Crumb_Native(RED4ext::IScriptable* aContext,
-                  RED4ext::CStackFrame* aFrame,
-                  void* aOut,
-                  int64_t a4) {
-    RED4EXT_UNUSED_PARAMETER(aContext);
-    RED4EXT_UNUSED_PARAMETER(aOut);
-    RED4EXT_UNUSED_PARAMETER(a4);
-
-    RED4ext::CString tag;
-    RED4ext::CString message;
-    RED4ext::GetParameter(aFrame, &tag);
-    RED4ext::GetParameter(aFrame, &message);
-    aFrame->code++;
-
-    const char* tagStr = tag.c_str();
-    const char* msgStr = message.c_str();
-    redscope::Crumb(redscope::BcUser,
-                    (tagStr && tagStr[0]) ? tagStr : "?",
-                    msgStr ? msgStr : "");
-}
 
 std::string SlurpFile(const std::filesystem::path& p) {
     std::ifstream f(p, std::ios::binary);
@@ -264,25 +242,9 @@ void GetAutoDownload_Native(RED4ext::IScriptable* aContext, RED4ext::CStackFrame
 void PostRegisterTypes() {
     auto* rtti = RED4ext::CRTTISystem::Get();
     if (!rtti) {
-        log::Error("REDscope.Crumb: CRTTISystem::Get() returned null; binding skipped.");
+        log::Error("REDscope: CRTTISystem::Get() returned null; native bindings skipped.");
         return;
     }
-
-    auto* fn = RED4ext::CGlobalFunction::Create("REDscope.Crumb", "Crumb", &Crumb_Native);
-    if (!fn) {
-        log::Error("REDscope.Crumb: CGlobalFunction::Create returned null; binding skipped.");
-        return;
-    }
-
-    fn->flags.isNative = 1;
-    fn->flags.isStatic = 1;
-    fn->SetReturnType("Void");
-    fn->AddParam("String", "tag");
-    fn->AddParam("String", "message");
-
-    rtti->RegisterFunction(fn);
-    g_registeredFn = fn;
-    log::Info("REDscope.Crumb registered as native global function.");
 
     auto fn2 = RED4ext::CGlobalFunction::Create("REDscope.GetLatestCrashJson", "GetLatestCrashJson", &GetLatestCrashJson_Native);
     if (!fn2) {
@@ -397,7 +359,6 @@ void RegisterRedScriptBindings() {
 
 void UnregisterRedScriptBindings() {
     if (auto* rtti = RED4ext::CRTTISystem::Get()) {
-        if (g_registeredFn) rtti->UnregisterFunction(g_registeredFn);
         if (g_registeredFn2) rtti->UnregisterFunction(g_registeredFn2);
         if (g_registeredFn3) rtti->UnregisterFunction(g_registeredFn3);
         if (g_registeredFn4) rtti->UnregisterFunction(g_registeredFn4);
@@ -407,7 +368,6 @@ void UnregisterRedScriptBindings() {
         if (g_registeredFn8) rtti->UnregisterFunction(g_registeredFn8);
         if (g_registeredFn9) rtti->UnregisterFunction(g_registeredFn9);
     }
-    g_registeredFn = nullptr;
     g_registeredFn2 = nullptr;
     g_registeredFn3 = nullptr;
     g_registeredFn4 = nullptr;

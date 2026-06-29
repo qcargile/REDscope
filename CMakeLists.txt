@@ -5,7 +5,7 @@ if(NOT DEFINED VCPKG_TARGET_TRIPLET)
     set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
 endif()
 
-project(REDscope VERSION 0.5.0 LANGUAGES CXX)
+project(REDscope VERSION 0.6.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -43,7 +43,6 @@ add_library(REDscope SHARED
     src/Logger.cpp
     src/Config.cpp
     src/breadcrumbs/BreadcrumbApi.cpp
-    src/breadcrumbs/BreadcrumbStore.cpp
     src/breadcrumbs/CrashArchive.cpp
     src/hooks/Hooks.cpp
     src/hooks/DispatchHook.cpp
@@ -60,8 +59,6 @@ add_library(REDscope SHARED
     src/report/Fingerprint.cpp
     src/report/JsonSidecar.cpp
     src/report/ReportCheckpoint.cpp
-    src/report/ResourceAtFault.cpp
-    src/report/RsdbResolver.cpp
     src/report/Sections.cpp
     src/report/SetupSections.cpp
     src/report/StackDump.cpp
@@ -79,7 +76,6 @@ add_library(REDscope SHARED
     src/snapshot/HardwareSpecs.cpp
     src/snapshot/InstalledMods.cpp
     src/snapshot/PluginMetadata.cpp
-    src/snapshot/ResourceLoaderSnapshot.cpp
     src/snapshot/RttiSnapshot.cpp
     src/snapshot/SessionHistory.cpp
     src/snapshot/SetupIntegrity.cpp
@@ -117,7 +113,7 @@ target_compile_definitions(REDscope PRIVATE
     WIN32_LEAN_AND_MEAN
     _CRT_SECURE_NO_WARNINGS
     REDSCOPE_USE_RTTI
-    REDSCOPE_VERSION="0.5.0"
+    REDSCOPE_VERSION="0.6.0"
 )
 
 target_compile_options(REDscope PRIVATE /Zi)
@@ -130,7 +126,6 @@ set_property(TARGET REDscope PROPERTY
 # Deployment: REDscope is an MO2-managed mod. NEVER write to the Steam install.
 set(REDSCOPE_MOD_ROOT      "${CMAKE_SOURCE_DIR}" CACHE PATH "Mod folder root (defaults to the source tree)")
 set(REDSCOPE_PLUGIN_DEPLOY "${REDSCOPE_MOD_ROOT}/red4ext/plugins/REDscope")
-set(REDSCOPE_R6_SCRIPTS    "${REDSCOPE_MOD_ROOT}/r6/scripts")
 set(REDSCOPE_CET_DIR       "${REDSCOPE_MOD_ROOT}/bin/x64/plugins/cyber_engine_tweaks/mods/REDscope")
 add_custom_target(deploy
     COMMAND ${CMAKE_COMMAND} -E make_directory "${REDSCOPE_PLUGIN_DEPLOY}"
@@ -139,8 +134,6 @@ add_custom_target(deploy
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/REDscope.ini" "${REDSCOPE_PLUGIN_DEPLOY}/"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${REDSCOPE_PLUGIN_DEPLOY}/conflicts"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/conflicts/README.md" "${REDSCOPE_PLUGIN_DEPLOY}/conflicts/"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${REDSCOPE_R6_SCRIPTS}"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/r6/scripts/REDscope.reds" "${REDSCOPE_R6_SCRIPTS}/"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${REDSCOPE_CET_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/bin/x64/plugins/cyber_engine_tweaks/mods/REDscope/init.lua" "${REDSCOPE_CET_DIR}/"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${REDSCOPE_CET_DIR}/analyzer/core" "${REDSCOPE_CET_DIR}/analyzer/rules" "${REDSCOPE_CET_DIR}/analyzer/conformance"

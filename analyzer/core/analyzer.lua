@@ -16,7 +16,7 @@ local VALID_CONDITIONS = {
   tweakDbRecordAny = true, statusEffectRecordAny = true,
   findEntityNullCallerAny = true, recentDelayCallbackAny = true,
   wrapLayerModAny = true,
-  inFlightClassAny = true, inFlightClassHasModFields = true,
+  inFlightClassAny = true,
   curatedConflictActive = true, conflictGroupAny = true,
   setupHasIssues = true, setupIssueKindAny = true,
 }
@@ -165,13 +165,6 @@ function Analyzer.matchRule(rule, sidecar)
     local classes = {}
     for _, o in ipairs(arr(sidecar.objectsInFlight)) do classes[#classes + 1] = lc(o and o.className) end
     if not anyOf(arr(m.inFlightClassAny), function(x) return contains(classes, x) end) then return false end
-  end
-  if m.inFlightClassHasModFields ~= nil then
-    local has = false
-    for _, o in ipairs(arr(sidecar.objectsInFlight)) do
-      if o and tonumber(o.modFields or 0) > 0 then has = true break end
-    end
-    if has ~= (m.inFlightClassHasModFields == true) then return false end
   end
   if m.curatedConflictActive ~= nil then
     local ac = sidecar.archiveConflicts

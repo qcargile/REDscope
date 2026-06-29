@@ -76,7 +76,6 @@ TEST(JsonSidecar, ContainsFingerprintAndException) {
     EXPECT_NE(j.find("Cyberpunk2077.exe"), std::string::npos);
     EXPECT_NE(j.find("\"rva\": \"0x500\""), std::string::npos);
     EXPECT_NE(j.find("\"buildId\": \"2.21\""), std::string::npos);
-    EXPECT_NE(j.find("\"resourceAtFault\""), std::string::npos);
     EXPECT_NE(j.find("\"stackObjects\""), std::string::npos);
 }
 
@@ -155,7 +154,7 @@ TEST(JsonSidecar, StackModulesFromStackMemory) {
 
     std::string j = Build(&ep, &s);
 
-    EXPECT_NE(j.find("\"schema\": 12"), std::string::npos);
+    EXPECT_NE(j.find("\"schema\": 15"), std::string::npos);
     auto modxPos = j.find("{ \"name\": \"ModX.dll\", \"hits\": 2, \"kind\": \"mod\" }");
     EXPECT_NE(modxPos, std::string::npos);
     EXPECT_NE(j.find("{ \"name\": \"Cyberpunk2077.exe\", \"hits\": 1, \"kind\": \"game\" }"), std::string::npos);
@@ -222,7 +221,7 @@ TEST(JsonSidecar, ModsChangedSinceLastLaunchEmits) {
     EXPECT_NE(j.find("\"from\": \"1.10\", \"to\": \"1.11\""), std::string::npos);
 }
 
-TEST(JsonSidecar, ObjectsInFlightEmitsRegClassModFields) {
+TEST(JsonSidecar, ObjectsInFlightEmitsRegClass) {
     CrashFingerprint fp{};
     SetLastFingerprint(fp);
     Snapshot s{};
@@ -236,11 +235,9 @@ TEST(JsonSidecar, ObjectsInFlightEmitsRegClassModFields) {
     std::strncpy(inFlight.items[0].reg, "RCX", sizeof(inFlight.items[0].reg) - 1);
     std::strncpy(inFlight.items[0].className, "gamedataItem_Record",
                  sizeof(inFlight.items[0].className) - 1);
-    inFlight.items[0].modFields = 2;
     std::strncpy(inFlight.items[1].reg, "RBX", sizeof(inFlight.items[1].reg) - 1);
     std::strncpy(inFlight.items[1].className, "PlayerPuppet",
                  sizeof(inFlight.items[1].className) - 1);
-    inFlight.items[1].modFields = 0;
 
     redscope::PreallocatedBuffer buf;
     buf.Reserve(1 << 16);
@@ -248,10 +245,10 @@ TEST(JsonSidecar, ObjectsInFlightEmitsRegClassModFields) {
     std::string j(buf.Data(), buf.Size());
 
     EXPECT_NE(j.find("\"objectsInFlight\": [{ \"reg\": \"RCX\", \"className\": "
-                     "\"gamedataItem_Record\", \"modFields\": 2 }, { \"reg\": \"RBX\", "
-                     "\"className\": \"PlayerPuppet\", \"modFields\": 0 }]"),
+                     "\"gamedataItem_Record\" }, { \"reg\": \"RBX\", "
+                     "\"className\": \"PlayerPuppet\" }]"),
               std::string::npos);
-    EXPECT_NE(j.find("\"schema\": 12"), std::string::npos);
+    EXPECT_NE(j.find("\"schema\": 15"), std::string::npos);
 }
 
 TEST(JsonSidecar, ModsChangedNullWhenNoPriorFile) {
@@ -264,4 +261,30 @@ TEST(JsonSidecar, ModsChangedNullWhenNoPriorFile) {
     ep.ExceptionRecord = &rec;
     std::string j = Build(&ep, &s);
     EXPECT_NE(j.find("\"modsChangedSinceLastLaunch\": null"), std::string::npos);
+}
+
+TEST(JsonSidecar, MaxModlistStaysValidJsonInSidecarBuffer) {
+    Snapshot s{};
+    AddModule(s, 0x140000000ull, 0x1000, "Cyberpunk2077.exe", ModuleKind::Game);
+    const size_t N = redscope::snap::kMaxInstalledMods;       // the hard cap the emitter allows
+    for (size_t i = 0; i < N; ++i) {
+        InstalledMod m;
+        char nm[64];
+        std::snprintf(nm, sizeof(nm), "some_mod_with_a_longish_name_%04zu", i);
+        m.name    = nm;
+        m.version = "1.2.3";
+        m.enabled = true;
+        m.type    = ModType::Archive;
+        m.subpath = std::string("archive/pc/mod/") + nm + ".archive";
+        m.archives.push_back(std::string(nm) + ".archive");
+        s.inventory.mods.push_back(m);
+    }
+    redscope::PreallocatedBuffer buf;
+    buf.Reserve(redscope::kSidecarBufferBytes);              // production sidecar size
+    BuildJsonSidecar(buf, nullptr, &s, std::chrono::system_clock::now());
+    std::string j(buf.Data(), buf.Size());
+    EXPECT_FALSE(buf.Overflowed());                          // no truncation
+    ASSERT_GE(j.size(), 2u);
+    EXPECT_EQ(j.substr(j.size() - 2), "}\n");               // valid close, not cut mid-token
+    EXPECT_NE(j.find("some_mod_with_a_longish_name_2047"), std::string::npos);  // last entry intact
 }

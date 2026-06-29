@@ -18,7 +18,7 @@
     "confidence": "high",
     "match": { "exceptionCodeAny": ["0xC0000374"] },
     "message": "Heap corruption detected. The real culprit corrupted memory earlier in the session; the crash address is only where it was noticed, so the faulting module is not the suspect.",
-    "fix": "Bisect mods that touch native code or memory. Check the breadcrumb tail and the loaded-mod set for recently-active mods.",
+    "fix": "Bisect mods that touch native code or memory. Check the loaded-mod set and recent changes for recently-active mods.",
     "links": []
   },
   {
