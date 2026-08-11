@@ -1,332 +1,912 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reading a REDscope crash report</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A plain-language guide to reading REDscope crash reports for Cyberpunk 2077.">
+<title>How to read a REDscope crash report</title>
 <style>
   :root {
-    --bg: #14130f;
-    --surface: #1c1b16;
-    --surface2: #23221c;
-    --line: #34322a;
-    --text: #e7e3d7;
-    --dim: #b3ae9d;
-    --accent: #7fb8d6;
-    --brand: #ff5544;
-    --mono: ui-monospace, Consolas, monospace;
-    --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+    --night: #11110f;
+    --panel: #1a1b17;
+    --raised: #24251f;
+    --line: #3a3b33;
+    --ink: #eeece2;
+    --muted: #aaa99f;
+    --red: #ff5a4b;
+    --blue: #83bdd9;
+    --amber: #e3b866;
+    --green: #82c99a;
+    --display: Bahnschrift, "Arial Narrow", "Segoe UI", sans-serif;
+    --body: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    --mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
   }
+
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    line-height: 1.6;
+    background: var(--night);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
-  header.site { border-bottom: 1px solid var(--line); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
-  header.site .brand { font-family: var(--mono); font-size: 2rem; font-weight: 700; margin: 0 0 0.4rem; line-height: 1.2; }
-  header.site .brand .name { color: var(--brand); }
-  header.site .tagline { margin: 0; color: var(--dim); font-size: 1.02rem; }
-  nav.toc { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 2.5rem; }
-  nav.toc .toc-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); margin: 0 0 0.65rem; font-weight: 600; }
-  nav.toc ol { margin: 0; padding-left: 1.4rem; }
-  nav.toc li { margin: 0.3rem 0; }
-  nav.toc a { color: var(--accent); text-decoration: none; }
-  nav.toc a:hover { text-decoration: underline; }
-  section.doc { border-top: 1px solid var(--line); padding-top: 2rem; margin-top: 2.5rem; }
-  section.doc:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
-  h1, h2, h3 { color: var(--text); line-height: 1.3; font-weight: 600; }
-  h1 { font-size: 1.7rem; margin: 0 0 1rem; }
-  h2 { font-size: 1.3rem; margin: 2.2rem 0 0.85rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--line); }
-  h3 { font-size: 1.08rem; margin: 1.7rem 0 0.6rem; color: var(--accent); }
-  p { margin: 0.85rem 0; }
-  a { color: var(--accent); }
-  strong { color: var(--text); }
-  ul, ol { margin: 0.85rem 0; padding-left: 1.5rem; }
-  li { margin: 0.4rem 0; }
-  code { font-family: var(--mono); font-size: 0.88em; background: var(--surface2); border: 1px solid var(--line); border-radius: 4px; padding: 0.08em 0.38em; color: var(--text); }
-  pre { background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.1rem; overflow-x: auto; margin: 1.1rem 0; line-height: 1.5; }
-  pre code { background: none; border: none; padding: 0; font-size: 0.85rem; white-space: pre; }
-  blockquote { margin: 1.2rem 0; padding: 0.6rem 1.1rem; border-left: 3px solid var(--brand); background: var(--surface); border-radius: 0 6px 6px 0; color: var(--dim); }
-  blockquote strong { color: var(--text); }
-  hr { border: none; border-top: 1px solid var(--line); margin: 2rem 0; }
-  table { border-collapse: collapse; width: 100%; margin: 1.2rem 0; font-size: 0.95rem; display: block; overflow-x: auto; }
-  thead { background: var(--surface2); }
-  th, td { border: 1px solid var(--line); padding: 0.55rem 0.8rem; text-align: left; vertical-align: top; }
-  th { color: var(--text); }
-  td { color: var(--dim); }
-  tbody tr:nth-child(even) { background: var(--surface); }
-  .back-top { display: inline-block; margin-top: 1.5rem; font-size: 0.82rem; color: var(--dim); text-decoration: none; font-family: var(--mono); }
-  .back-top:hover { color: var(--accent); }
-  @media (max-width: 600px) {
-    .wrap { padding: 1.5rem 1rem 4rem; }
-    header.site .brand { font-size: 1.55rem; }
-    h1 { font-size: 1.45rem; }
-    pre code { font-size: 0.78rem; }
+  a { color: var(--blue); text-underline-offset: 0.18em; }
+  a:hover { color: var(--ink); }
+  a:focus-visible,
+  summary:focus-visible {
+    outline: 3px solid var(--amber);
+    outline-offset: 4px;
+  }
+  code,
+  samp {
+    font-family: var(--mono);
+    font-size: 0.9em;
+  }
+  code {
+    padding: 0.08em 0.34em;
+    border: 1px solid var(--line);
+    background: var(--raised);
+  }
+  h1,
+  h2,
+  h3 {
+    margin-top: 0;
+    font-family: var(--display);
+    line-height: 1.15;
+  }
+  h1 {
+    max-width: 820px;
+    margin-bottom: 1rem;
+    font-size: clamp(2.45rem, 7vw, 5.5rem);
+    font-stretch: condensed;
+    letter-spacing: -0.035em;
+  }
+  h2 {
+    margin-bottom: 0.75rem;
+    font-size: clamp(1.75rem, 4vw, 2.55rem);
+    letter-spacing: -0.02em;
+  }
+  h3 {
+    margin-bottom: 0.45rem;
+    font-size: 1.1rem;
+    letter-spacing: 0.01em;
+  }
+  p { margin: 0.75rem 0; }
+  ul,
+  ol { padding-left: 1.3rem; }
+  li + li { margin-top: 0.45rem; }
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 20;
+    padding: 0.6rem 0.8rem;
+    background: var(--ink);
+    color: var(--night);
+    transform: translateY(-160%);
+  }
+  .skip-link:focus { transform: translateY(0); }
+  .site-header {
+    border-top: 5px solid var(--red);
+    border-bottom: 1px solid var(--line);
+  }
+  .header-inner,
+  .page-shell,
+  .site-footer {
+    width: min(1160px, calc(100% - 2rem));
+    margin: 0 auto;
+  }
+  .header-inner { padding: clamp(2.5rem, 7vw, 6rem) 0 3rem; }
+  .brand {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+  .kicker,
+  .section-kicker {
+    margin: 0 0 0.55rem;
+    color: var(--amber);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .lede {
+    max-width: 700px;
+    margin: 0;
+    color: var(--muted);
+    font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+  }
+  .page-shell {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: clamp(2rem, 6vw, 5rem);
+    align-items: start;
+    padding: 2.5rem 0 5rem;
+  }
+  .section-nav {
+    position: sticky;
+    top: 1rem;
+    border-left: 2px solid var(--line);
+    padding-left: 1rem;
+  }
+  .section-nav strong {
+    display: block;
+    margin-bottom: 0.65rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .section-nav ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .section-nav li + li { margin-top: 0.55rem; }
+  .section-nav a {
+    color: var(--muted);
+    font-size: 0.92rem;
+    text-decoration: none;
+  }
+  .section-nav a:hover { color: var(--ink); }
+  main { min-width: 0; }
+  .guide-section {
+    scroll-margin-top: 1rem;
+    padding: 0 0 clamp(3.5rem, 8vw, 6rem);
+  }
+  .guide-section + .guide-section {
+    border-top: 1px solid var(--line);
+    padding-top: clamp(3.5rem, 8vw, 6rem);
+  }
+  .section-intro {
+    max-width: 720px;
+    margin-bottom: 1.5rem;
+    color: var(--muted);
+    font-size: 1.05rem;
+  }
+  .steps {
+    margin: 1.7rem 0;
+    padding: 0;
+    counter-reset: guide-step;
+    list-style: none;
+  }
+  .steps li {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+    padding: 1rem 0;
+    border-top: 1px solid var(--line);
+    counter-increment: guide-step;
+  }
+  .steps li:last-child { border-bottom: 1px solid var(--line); }
+  .steps li::before {
+    content: counter(guide-step, decimal-leading-zero);
+    color: var(--red);
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+  .step-title {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-family: var(--display);
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+  .step-copy { color: var(--muted); }
+  .path-box,
+  .note-box {
+    margin-top: 1.25rem;
+    padding: 1rem 1.1rem;
+    border-left: 3px solid var(--blue);
+    background: var(--panel);
+  }
+  .path-box p,
+  .note-box p { margin: 0; }
+  .path-box code {
+    display: inline;
+    overflow-wrap: anywhere;
+  }
+  .evidence-ladder {
+    margin: 2rem 0 1.25rem;
+    border: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .evidence-level {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: 1.25rem;
+    padding: 1.35rem 1.5rem;
+    border-left: 6px solid var(--line);
+  }
+  .evidence-level + .evidence-level { border-top: 1px solid var(--line); }
+  .evidence-level.strong { border-left-color: var(--red); }
+  .evidence-level.supporting { border-left-color: var(--amber); }
+  .evidence-level.context { border-left-color: var(--blue); }
+  .evidence-name {
+    font-family: var(--display);
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+  .evidence-level ul { margin: 0; }
+  .evidence-rule {
+    margin: 0;
+    color: var(--muted);
+  }
+  .report-frame {
+    margin: 1.75rem 0;
+    border: 1px solid var(--line);
+    background: #0d0e0c;
+    box-shadow: 8px 8px 0 #2a2b25;
+  }
+  .report-bar {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+  }
+  .report-frame pre {
+    margin: 0;
+    padding: 1.1rem;
+    overflow-x: auto;
+    color: #d7d8d1;
+    font-family: var(--mono);
+    font-size: clamp(0.78rem, 2.2vw, 0.9rem);
+    line-height: 1.75;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .signal-lead { color: #ff8f82; font-weight: 700; }
+  .signal-direct { color: var(--amber); font-weight: 700; }
+  .signal-context { color: var(--blue); font-weight: 700; }
+  .signal-good { color: var(--green); font-weight: 700; }
+  .clue-grid,
+  .type-grid,
+  .situation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .clue-card,
+  .type-card,
+  .situation-card {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 1.15rem;
+  }
+  .clue-card h3,
+  .type-card h3,
+  .situation-card h3 { color: var(--blue); }
+  .clue-card dl { margin: 0; }
+  .clue-card dt {
+    margin-top: 0.9rem;
+    color: var(--amber);
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .clue-card dt:first-child { margin-top: 0; }
+  .clue-card dd {
+    margin: 0.2rem 0 0;
+    color: var(--muted);
+  }
+  .field-list {
+    border-top: 1px solid var(--line);
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: minmax(10rem, 0.8fr) minmax(0, 2fr);
+    gap: 1.5rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .field-row h3 { color: var(--blue); }
+  .field-row p { margin: 0; color: var(--muted); }
+  .field-row p + p { margin-top: 0.65rem; }
+  .plain-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+  }
+  .plain-table th,
+  .plain-table td {
+    padding: 0.85rem;
+    border: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
+  .plain-table th {
+    background: var(--raised);
+    font-family: var(--display);
+  }
+  .plain-table td { color: var(--muted); }
+  .status-word { color: var(--ink); font-family: var(--mono); }
+  .type-card p,
+  .situation-card p { color: var(--muted); }
+  .test-label {
+    display: block;
+    margin-top: 0.9rem;
+    color: var(--amber);
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .handoff {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .handoff > div {
+    border-top: 3px solid var(--red);
+    background: var(--panel);
+    padding: 1.2rem;
+  }
+  .handoff h3 { color: var(--ink); }
+  .handoff ul { color: var(--muted); }
+  .reference-stack {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+  details {
+    border-bottom: 1px solid var(--line);
+    scroll-margin-top: 1rem;
+  }
+  summary {
+    cursor: pointer;
+    padding: 1.05rem 2rem 1.05rem 0;
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  details[open] summary { color: var(--blue); }
+  .details-body {
+    max-width: 760px;
+    padding: 0 0 1.35rem;
+    color: var(--muted);
+  }
+  .details-body h3 {
+    margin-top: 1.5rem;
+    color: var(--ink);
+  }
+  .details-body pre {
+    overflow-x: auto;
+    padding: 0.9rem;
+    border: 1px solid var(--line);
+    background: #0d0e0c;
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 0.82rem;
+  }
+  .site-footer {
+    padding: 2rem 0 4rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .site-footer p { margin: 0; }
+
+  @media (max-width: 820px) {
+    .page-shell { grid-template-columns: 1fr; }
+    .section-nav {
+      position: static;
+      border-left: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 0 0 1.25rem;
+    }
+    .section-nav ul {
+      display: flex;
+      gap: 0.6rem 1rem;
+      flex-wrap: wrap;
+    }
+    .section-nav li + li { margin-top: 0; }
+  }
+
+  @media (max-width: 620px) {
+    .header-inner,
+    .page-shell,
+    .site-footer { width: min(100% - 1.25rem, 1160px); }
+    .header-inner { padding-top: 2.5rem; }
+    .brand { margin-bottom: 1.4rem; }
+    .evidence-level,
+    .field-row { grid-template-columns: 1fr; gap: 0.65rem; }
+    .clue-grid,
+    .type-grid,
+    .situation-grid,
+    .handoff { grid-template-columns: 1fr; }
+    .report-frame { box-shadow: 4px 4px 0 #2a2b25; }
+    .plain-table,
+    .plain-table thead,
+    .plain-table tbody,
+    .plain-table tr,
+    .plain-table th,
+    .plain-table td { display: block; }
+    .plain-table th { border-bottom: 0; }
+    .plain-table tr + tr { margin-top: 0.9rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<a class="skip-link" href="#main-content">Skip to the guide</a>
 
-  <header class="site">
-    <h1 class="brand"><span class="name">REDscope</span></h1>
-    <p class="tagline">What each part of the <code>.crash</code> file means, and how to read it.</p>
-  </header>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#top" id="top">REDscope</a>
+    <p class="kicker">Crash reports, in plain English</p>
+    <h1>Find the clue. Check it. Test it.</h1>
+    <p class="lede">A REDscope report is not a guilty verdict. It is a stack of clues. This guide shows you which clues matter, which ones do not prove anything by themselves, and what to try next.</p>
+  </div>
+</header>
 
-  <nav class="toc" aria-label="Contents">
-    <p class="toc-title">On this page</p>
-    <ol>
-      <li><a href="#getting-started">Getting started</a></li>
-      <li><a href="#how-to-read">Reading the crash report</a></li>
-      <li><a href="#common-crashes">Common crashes and fixes</a></li>
-      <li><a href="#for-mod-authors">For mod authors</a></li>
-    </ol>
+<div class="page-shell">
+  <nav class="section-nav" aria-label="Guide sections">
+    <strong>On this page</strong>
+    <ul>
+      <li><a href="#start-here">Start here</a></li>
+      <li><a href="#evidence-ladder">Evidence ladder</a></li>
+      <li><a href="#worked-example">One crash explained</a></li>
+      <li><a href="#important-sections">Important sections</a></li>
+      <li><a href="#report-types">Report types</a></li>
+      <li><a href="#common-situations">Common situations</a></li>
+      <li><a href="#ask-for-help">Ask for help</a></li>
+      <li><a href="#reference">Reference</a></li>
+    </ul>
   </nav>
 
-  <section class="doc" id="getting-started">
-    <h1>Getting started</h1>
+  <main id="main-content">
+    <section class="guide-section" id="start-here">
+      <p class="section-kicker">First crash</p>
+      <h2>Start here</h2>
+      <p class="section-intro">You do not need to understand the whole file. Read these five things in order. Stop when you have a testable lead.</p>
 
-    <p>REDscope is a crash reporter for Cyberpunk 2077. When the game crashes it writes one plain-text <code>.crash</code> file that names the likely culprit and records the call stacks, engine state, what the game was loading, recent log errors, and which mods changed since your last working launch.</p>
+      <ol class="steps">
+        <li>
+          <div>
+            <span class="step-title">Open the newest <code>.crash</code> file.</span>
+            <span class="step-copy">The filename contains the crash date and time. Open it in any text editor.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <span class="step-title">Read the lead.</span>
+            <span class="step-copy"><code>LIKELY CULPRIT</code> is REDscope's best lead. The confidence tells you how much weight to give it.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <span class="step-title">Check the evidence.</span>
+            <span class="step-copy">Look for the same module in the Crash block and Native call stack. Check whether script code was really running.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <span class="step-title">Separate context from proof.</span>
+            <span class="step-copy">Warnings, loaded DLLs, memory pressure, archive activity, and wrap counts can help. None of them proves a cause by itself.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <span class="step-title">Repeat the same action.</span>
+            <span class="step-copy">Compare the next Crash ID, lead, stack, and game action. Repeated evidence is more useful than one report.</span>
+          </div>
+        </li>
+      </ol>
 
-    <h3>Requirements</h3>
-    <ul>
-      <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/2380">RED4ext</a></li>
-      <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/107">Cyber Engine Tweaks</a></li>
-      <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/1511">redscript</a></li>
-    </ul>
+      <div class="path-box">
+        <p><strong>File location:</strong> <code>red4ext/plugins/REDscope/crashes/</code>. In Mod Organizer 2, look in <strong>Overwrite</strong>.</p>
+      </div>
+    </section>
 
-    <h3>Install</h3>
-    <p>Install it through Mod Organizer 2 or Vortex like any other mod, or unzip the folders into your Cyberpunk 2077 directory. It should load ahead of any other crash-handler plugin. There is nothing to configure.</p>
+    <section class="guide-section" id="evidence-ladder">
+      <p class="section-kicker">What deserves your attention</p>
+      <h2>Evidence ladder</h2>
+      <p class="section-intro">Start at the top. A clue near the bottom can support a lead, but it should not choose the culprit for you.</p>
 
-    <h3>Where the files go</h3>
-    <p>Each crash writes a <code>.crash</code> file (and a matching <code>.crash.json</code>) to <code>red4ext/plugins/REDscope/crashes/</code>. Under Mod Organizer 2 that lives in your <strong>Overwrite</strong> folder.</p>
+      <div class="evidence-ladder" aria-label="Crash evidence from strongest to weakest">
+        <div class="evidence-level strong">
+          <div class="evidence-name">Strong evidence</div>
+          <ul>
+            <li>The fault landed inside a mod DLL.</li>
+            <li>The same mod appears near the top of the crashing stack.</li>
+            <li>The same Crash ID, action, and stack repeat.</li>
+          </ul>
+        </div>
+        <div class="evidence-level supporting">
+          <div class="evidence-name">Supporting evidence</div>
+          <ul>
+            <li>A script was executing when the fault happened.</li>
+            <li>A mod changed just before the crashes began.</li>
+            <li>The same item, menu, save, or action triggers it.</li>
+          </ul>
+        </div>
+        <div class="evidence-level context">
+          <div class="evidence-name">Context only</div>
+          <ul>
+            <li>A DLL was loaded.</li>
+            <li>A warning appeared near the crash.</li>
+            <li>Memory pressure was elevated.</li>
+            <li>An archive operation was active.</li>
+            <li>A mod has many wrap chains.</li>
+          </ul>
+        </div>
+      </div>
 
-    <h3>Reading a crash</h3>
-    <p>Open the <code>.crash</code> file in any text editor, or open the Cyber Engine Tweaks panel in-game to read the latest one without leaving the game. Once you have the culprit, disable or roll back that mod, or attach the file when you report the crash to its author.</p>
+      <p class="evidence-rule"><strong>Simple rule:</strong> the more independent clues agree, the better the lead. One nearby name is not enough.</p>
+    </section>
 
-    <a class="back-top" href="#getting-started">top</a>
-  </section>
+    <section class="guide-section" id="worked-example">
+      <p class="section-kicker">Sanitized real report</p>
+      <h2>One crash, explained</h2>
+      <p class="section-intro">This example came from a real REDscope report. Personal details and unrelated mod names were removed.</p>
 
-  <section class="doc" id="how-to-read">
-    <h1>Reading the crash report</h1>
+      <div class="report-frame">
+        <div class="report-bar"><span>REDscope crash excerpt</span><span>native crash</span></div>
+        <pre><samp><span class="signal-lead">LIKELY CULPRIT: mod (MEDIUM)</span> - ArchiveXL.dll on the crashing stack
+Exception : 0xC0000005 ACCESS_VIOLATION
+Class     : native
+Mod code on native stack:
+  <span class="signal-direct">ArchiveXL.dll + 0x12C836</span>
+Last script on crashing thread:
+  OnEnterScenario  <span class="signal-context">NOT in flight at crash</span>
+OOM suspected   : <span class="signal-good">false</span>
+Resource pressure: <span class="signal-context">elevated, physical RAM low</span>
+Final packet status: text and JSON complete</samp></pre>
+      </div>
 
-    <p>The file is plain text, named by date and time (<code>REDscope-2026-06-23_20-10-15.crash</code>). Read it top to bottom and stop when you have what you need. The top sections usually answer it; the hex dumps near the bottom are for mod authors.</p>
+      <div class="clue-grid">
+        <article class="clue-card">
+          <h3>ArchiveXL at medium confidence</h3>
+          <dl>
+            <dt>What this says</dt>
+            <dd>ArchiveXL code was on the crashing thread while the fault surfaced in game code.</dd>
+            <dt>What this does not prove</dt>
+            <dd>It does not prove ArchiveXL itself is broken. A framework can be doing work for another mod.</dd>
+            <dt>What to do next</dt>
+            <dd>Check recent ArchiveXL-dependent mods. Repeat the same loading action before removing the framework.</dd>
+          </dl>
+        </article>
 
-    <hr>
+        <article class="clue-card">
+          <h3>Native crash</h3>
+          <dl>
+            <dt>What this says</dt>
+            <dd>No RedScript frame was executing at the exact fault.</dd>
+            <dt>What this does not prove</dt>
+            <dd>It does not rule out a script or data mod. Earlier work can feed bad data into native code.</dd>
+            <dt>What to do next</dt>
+            <dd>Give the Native call stack more weight than the last script name.</dd>
+          </dl>
+        </article>
 
-    <h2>The <code>LIKELY CULPRIT</code> line</h2>
-    <p>The first line is REDscope's best guess:</p>
-    <pre><code>LIKELY CULPRIT: game (MEDIUM) - icuuc.dll!icu_65::UObject::UObject+0x1817</code></pre>
-    <p>The word in parentheses is confidence: <strong>HIGH</strong> means start with whatever it names, <strong>MEDIUM</strong> is a lead worth checking, <strong>LOW</strong> is a weak hint. The word after it is who it blames. A mod <code>.dll</code> name (for example <code>Mod ArchiveXL.dll+0x8124</code>) means that mod is the suspect.</p>
-    <p>This example says <code>game</code>, meaning the fault landed in Cyberpunk's own code or a Windows library.</p>
-    <blockquote>
-      <p><strong>"game" does not rule out a mod.</strong> Mods run through the game's code, so a mod can trigger a fault that lands in the engine. When you see <code>game</code>, check the native call stack for mod <code>.dll</code> names and check what your scripts were doing.</p>
-    </blockquote>
-    <p>The <code>CRASH ID</code> below it is a fingerprint of this specific crash. The same crash produces the same ID, which tells you whether a fix worked and is worth quoting in a bug report.</p>
+        <article class="clue-card">
+          <h3>Last script not in flight</h3>
+          <dl>
+            <dt>What this says</dt>
+            <dd><code>OnEnterScenario</code> was the last script REDscope saw on that thread.</dd>
+            <dt>What this does not prove</dt>
+            <dd>It was not running when the native fault happened. It is earlier context.</dd>
+            <dt>What to do next</dt>
+            <dd>Use it only if the same script and action repeat across reports.</dd>
+          </dl>
+        </article>
 
-    <hr>
+        <article class="clue-card">
+          <h3>Pressure is not OOM</h3>
+          <dl>
+            <dt>What this says</dt>
+            <dd>Windows had less free physical RAM than REDscope's normal range.</dd>
+            <dt>What this does not prove</dt>
+            <dd><code>OOM suspected: false</code> means REDscope did not see hard memory exhaustion.</dd>
+            <dt>What to do next</dt>
+            <dd>Create some headroom, but follow the stronger module and stack evidence first.</dd>
+          </dl>
+        </article>
+      </div>
+    </section>
 
-    <h2>The <code>Crash</code> block</h2>
-    <pre><code>Exception : 0xC0000005 ACCESS_VIOLATION
-Fault data: write at 0x00000056C7223FD8
-            region: FREE  -&gt; unmapped; dangling ptr / garbage
-Class     : scripted</code></pre>
-    <ul>
-      <li><code>ACCESS_VIOLATION</code> is the most common type: the game used memory it wasn't allowed to.</li>
-      <li><code>region: FREE</code> means it reached for something already thrown away, not that it ran out of memory.</li>
-      <li><code>Class: scripted</code> means script code was running at the time, which points toward a mod.</li>
-    </ul>
-    <p>You don't act on the addresses. The summary you want for a bug report is the type: "access violation, dangling pointer, during scripts".</p>
+    <section class="guide-section" id="important-sections">
+      <p class="section-kicker">Read from top to bottom</p>
+      <h2>The important sections</h2>
+      <p class="section-intro">The top half usually gives you everything you can act on. The bottom half is there for the person debugging the mod.</p>
 
-    <hr>
+      <div class="field-list">
+        <article class="field-row">
+          <h3><code>LIKELY CULPRIT</code></h3>
+          <div>
+            <p>REDscope's highest-ranked lead. <strong>HIGH</strong> is strong evidence. <strong>MEDIUM</strong> is worth testing. <strong>LOW</strong> is a weak clue.</p>
+            <p><code>game</code> does not clear every mod. Mods can hand bad data to game code. A framework name can also mean it was carrying another mod's work.</p>
+          </div>
+        </article>
 
-    <h2>Version lines</h2>
-    <pre><code>REDscope  : 0.1.0
-RED4ext   : 1.30.0.0
-Cyberpunk : 3.0.80.51928</code></pre>
-    <p>If the Cyberpunk version doesn't match what your modlist expects, that mismatch can be the whole problem. Worth a glance after a game update.</p>
+        <article class="field-row">
+          <h3>Crash ID and Capture ID</h3>
+          <div>
+            <p><strong>Crash ID</strong> groups reports that look alike. Use it to spot repeats, but also compare the action and stack. Broad failures such as corruption can share a group.</p>
+            <p><strong>Capture ID</strong> names one crash event and its matching files. Two files with the same Capture ID belong together.</p>
+          </div>
+        </article>
 
-    <hr>
+        <article class="field-row">
+          <h3>Crash block</h3>
+          <div>
+            <p><code>ACCESS_VIOLATION</code> means code tried to use memory it could not use. Read, write, and execute tell you what it tried to do. You do not need to decode the address.</p>
+            <p><code>Class: scripted</code> means RedScript was in flight. <code>Class: native</code> means it was not. Neither line names the guilty mod.</p>
+          </div>
+        </article>
 
-    <h2><code>LAST ACTIVE</code></h2>
-    <p>What script code was running on each thread at the crash:</p>
-    <pre><code>Scripted code (per thread):
-  [CRASHING] tid=12820   OnItemDisplayHoverOver   (-00.008s ago)
-             ...</code></pre>
-    <p>The <code>[CRASHING]</code> line is the one that died. Here it is <code>OnItemDisplayHoverOver</code>, which runs when you hover an item, so the crash happened while hovering something in a menu. Below it:</p>
-    <pre><code>Mod code on native stack (crashing thread):
-  (none - native stack contains no frames in installed mod DLLs)</code></pre>
-    <p>This says no installed mod <code>.dll</code> was directly on the crashing thread. With "hovering an item" from the line above, the likely suspect is a script or UI mod that changes item tooltips or the inventory, even though no native <code>.dll</code> showed up. Match the <code>[CRASHING]</code> name to an in-game action and try to reproduce it.</p>
+        <article class="field-row">
+          <h3>Capture packet</h3>
+          <div>
+            <p>This says what REDscope saved. <code>first chance</code> means REDscope saw the exception early. A real game-ending crash can still show this when CDPR owns the later crash step.</p>
+            <p><code>Minidump: unavailable</code> does not make the text report useless. It often means another crash handler owned that part.</p>
+          </div>
+        </article>
 
-    <hr>
+        <article class="field-row">
+          <h3><code>LAST ACTIVE</code></h3>
+          <div>
+            <p><code>innermost (executing)</code> is script code that was running. <code>NOT in flight at crash</code> is only the last script seen on a thread before a native fault.</p>
+            <p>Match the function name to what you did in game. Give repeated matches more weight than one old function name.</p>
+          </div>
+        </article>
 
-    <h2><code>Live game state</code></h2>
-    <pre><code>combat                no
-menu                  Hub
-district              Watson / Northside</code></pre>
-    <p>Where you were and what you were doing, plus your graphics settings. The top few lines place the crash; the graphics list matters mainly when a setting like Frame Generation or Path Tracing is involved in a graphics or VRAM crash.</p>
+        <article class="field-row">
+          <h3>Call stacks</h3>
+          <div>
+            <p>The Native call stack is the chain of code on the crashing thread. The top is closest to the fault. A mod DLL near the top matters more than one far down the list.</p>
+            <p>The RedScript call stack shows script frames that were truly in flight. Raw <code>Cyberpunk2077.exe + 0x...</code> lines are normal. Most game functions have no public name.</p>
+          </div>
+        </article>
 
-    <hr>
+        <article class="field-row">
+          <h3>Memory and engine state</h3>
+          <div>
+            <p><strong>Physical RAM</strong> is memory sitting in the machine. <strong>System commit</strong> is the total memory Windows has promised to every program, backed by RAM and the page file. <strong>Process commit</strong> is Cyberpunk's share of those promises. <strong>VRAM</strong> is GPU memory.</p>
+            <p><code>Resource pressure</code> records reduced headroom. It remains context. Only <code>OOM suspected</code> is REDscope's near-exhaustion signal.</p>
+          </div>
+        </article>
 
-    <h2><code>Mods changed since last launch</code></h2>
-    <pre><code>Last launch: 2026-06-23 19:10:38  (541 mods tracked)
-  +1 added:
-    REDscope v0.1 0.1.0.0</code></pre>
-    <p>A diff against the last time you played. If a mod was added, updated, or removed and the crashing started right after, that's your first suspect. "No changes" means an existing setup, not a new mod.</p>
+        <article class="field-row">
+          <h3>Recent logs and changes</h3>
+          <div>
+            <p>Recent log activity is a time window. A warning near the crash may be unrelated. Look for a warning that repeats with the same action.</p>
+            <p>Mods changed since last launch is a useful shortlist. Start with a mod only when the crashes began after that change and the report points to the same area.</p>
+          </div>
+        </article>
 
-    <hr>
+        <article class="field-row">
+          <h3>Setup and conflicts</h3>
+          <div>
+            <p>Setup integrity checks for known installation problems. Curated conflicts list known combinations worth checking. These checks are separate from the crash itself.</p>
+            <p><code>no install problems detected</code> means those checks passed. It does not prove every file and every mod is correct.</p>
+          </div>
+        </article>
 
-    <h2><code>Native call stack</code></h2>
-    <p>The long numbered list. Skim it for one thing: mod <code>.dll</code> names. Each line is a step in the chain of code that was running, newest at the top.</p>
-    <ul>
-      <li>Lines reading <code>Cyberpunk2077.exe + 0xSOMETHING</code> are the game's own code. Only about 84 of its functions are named in the public database, so the rest show as raw offsets. That is normal, not a defect.</li>
-      <li>A mod <code>.dll</code> from a gameplay or UI mod is your lead.</li>
-      <li>The same one or two lines repeating many times means recursion: code calling itself until it ran out of room.</li>
-    </ul>
-    <p>If the only non-game names are framework DLLs (CET, RED4ext, Codeware, ArchiveXL, REDscope), the native stack won't name the culprit on its own. Fall back to <code>LAST ACTIVE</code> and the mods-changed diff.</p>
+        <article class="field-row">
+          <h3>Final packet status</h3>
+          <div>
+            <p>This is the last health check for the report. It tells you which parts reached disk.</p>
+            <table class="plain-table">
+              <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td class="status-word">complete</td><td>That part was saved.</td></tr>
+                <tr><td class="status-word">partial</td><td>Some data was saved, but that collector did not finish its full result.</td></tr>
+                <tr><td class="status-word">unavailable</td><td>REDscope could not collect that part in this crash path. Other parts can still be good.</td></tr>
+                <tr><td class="status-word">failed</td><td>That collector hit an error. Use the parts marked complete.</td></tr>
+                <tr><td class="status-word">pending</td><td>REDscope did not run or finish that collector. Check the other status rows before deciding why.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
 
-    <hr>
+        <article class="field-row">
+          <h3><code>engine-state.txt</code></h3>
+          <div>
+            <p>After the next launch, REDscope can match CDPR's crash data to the same event. It may add engine, GPU, save, and archive-operation context.</p>
+            <p>An active archive path tells you what the engine was touching. It does not prove that archive caused the crash.</p>
+          </div>
+        </article>
+      </div>
+    </section>
 
-    <h2><code>Engine state (at crash)</code></h2>
-    <pre><code>GPU memory      : 6629 / 11997 MB used (budget 11229 MB)
-OOM suspected   : false</code></pre>
-    <p>This answers whether the game ran out of memory. <code>OOM suspected: true</code>, or GPU memory near the maximum, means lower your settings (texture quality, ray tracing, path tracing, frame generation) or trim heavy texture mods. That's a resource problem, not a broken mod.</p>
+    <section class="guide-section" id="report-types">
+      <p class="section-kicker">Know what kind of report you have</p>
+      <h2>Three report types</h2>
+      <p class="section-intro">Do not look for a fault address in a report that never had one.</p>
 
-    <hr>
+      <div class="type-grid">
+        <article class="type-card">
+          <h3>Caught crash</h3>
+          <p>The game raised an exception and REDscope saved fault information. Read the lead, Crash block, stacks, and packet status.</p>
+        </article>
+        <article class="type-card">
+          <h3>Hang or freeze</h3>
+          <p>The game stopped responding without an exception. There is no faulting address. Use the last active scripts, game state, and repeated action.</p>
+        </article>
+        <article class="type-card">
+          <h3>Unclean exit</h3>
+          <p>REDscope found an unfinished session on the next launch. The report uses the last saved state. It cannot show a live crash stack that never survived.</p>
+        </article>
+      </div>
+    </section>
 
-    <h2><code>Resource streaming at crash</code></h2>
-    <p>Game files that failed to load or were still streaming when it crashed. REDscope looks each one up in the path dictionary that ships with the mod:</p>
-    <pre><code>Failed to load (792 this session):
-  base\localization\en-us\vo\judy_sq030_f_136656bf.wem
-  0xDB8DF92FE7746657  (missing or modded path)
-  ...</code></pre>
-    <p>Base-game files resolve to a path. Anything the dictionary doesn't contain shows the hash with a label: <code>(missing or modded path)</code> for a failed load, <code>(modded or dynamic path)</code> for one still streaming. Modded asset paths can't be reversed from a hash, so on a heavy modlist expect a mix of paths and labeled hashes. When a resolved path lines up with the crash, that file's mod is worth a look.</p>
+    <section class="guide-section" id="common-situations">
+      <p class="section-kicker">Start with what you saw</p>
+      <h2>Common situations</h2>
+      <p class="section-intro">Pick the moment that matches your crash. Run the first test before making a large change.</p>
 
-    <hr>
+      <div class="situation-grid">
+        <article class="situation-card">
+          <h3>Crash during startup</h3>
+          <p>Check Setup integrity, framework load failures, the direct fault module, and recently changed native plugins.</p>
+          <span class="test-label">First test</span>
+          <p>Undo the most recent plugin or framework update. Start the game again and compare the lead.</p>
+        </article>
 
-    <h2><code>Setup integrity</code></h2>
-    <p>Install problems found independently of the crash. The main one is loose files: mod files sitting directly in your game folder instead of being managed by your mod manager, which silently override your setup. If any are found they're listed here; otherwise it reads <code>(no install problems detected)</code>. The same check runs before launch through <code>tools/check-clean-install.ps1</code>, which writes a report without starting the game.</p>
+        <article class="situation-card">
+          <h3>Crash while loading a save</h3>
+          <p>Check whether the same save repeats it. Archive activity and last game state can narrow the area, but they are context.</p>
+          <span class="test-label">First test</span>
+          <p>Load a different save from the same character. Then load the failing save again.</p>
+        </article>
 
-    <hr>
+        <article class="situation-card">
+          <h3>Crash in a menu or tooltip</h3>
+          <p>Look for an executing RedScript frame tied to item hover, tooltips, inventory, or text formatting.</p>
+          <span class="test-label">First test</span>
+          <p>Repeat the same hover or menu action. Note the exact item and compare the Crash ID.</p>
+        </article>
 
-    <h2><code>System</code> and <code>Installed mods</code></h2>
-    <p><code>System</code> is your hardware, drivers, and OS; check the GPU driver and free RAM if crashes are frequent. <code>Installed mods</code> is a one-line count plus your manager and profile, with the full per-mod list in the <code>.crash.json</code> next to the report. <code>Loaded modules</code> lists the actual DLLs with versions, sorted into Mod, Game, and System. Attach the <code>.json</code> when you report a crash; it's the complete modlist.</p>
+        <article class="situation-card">
+          <h3>Crash during gameplay</h3>
+          <p>Write down the exact action: entering combat, driving, opening a door, changing equipment, or entering an area.</p>
+          <span class="test-label">First test</span>
+          <p>Repeat that action once. Compare the direct module, stack, and Crash ID.</p>
+        </article>
 
-    <hr>
+        <article class="situation-card">
+          <h3>Game froze instead of closing</h3>
+          <p>Use the Hang report. There is no exception to decode. Look for the same last active function across hangs.</p>
+          <span class="test-label">First test</span>
+          <p>Repeat the action and wait for the watchdog once. Compare the last active scripts and game state.</p>
+        </article>
 
-    <h2>The bottom sections</h2>
-    <p>Registers, Stack memory, Process memory, and Wrap chains are detail for the mod author. <code>Wrap chains</code> is the one a player might read: it lists which mods modify the most game functions, so if the crash is in an area one of them touches, that's a hint. Attach the whole <code>.crash</code> file when reporting; the author needs these.</p>
+        <article class="situation-card">
+          <h3>No clear lead</h3>
+          <p>One unknown report may not be enough. Build a repeat before blaming a loaded mod or a nearby warning.</p>
+          <span class="test-label">First test</span>
+          <p>Undo recent changes first. If it still repeats, disable half of the remaining suspects and narrow from there.</p>
+        </article>
+      </div>
+    </section>
 
-    <hr>
+    <section class="guide-section" id="ask-for-help">
+      <p class="section-kicker">Give the next person a clean handoff</p>
+      <h2>Ask for help</h2>
+      <p class="section-intro">A short reproduction is more useful than a guess about the cause.</p>
 
-    <h2>Where to look for what</h2>
-    <table>
-      <thead>
-        <tr><th>Question</th><th>Section</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>What's the one-line answer?</td><td><code>LIKELY CULPRIT</code></td></tr>
-        <tr><td>Did a mod I just installed do it?</td><td><code>Mods changed since last launch</code></td></tr>
-        <tr><td>What was I doing?</td><td><code>LAST ACTIVE</code> and <code>Live game state</code></td></tr>
-        <tr><td>Is a specific mod named?</td><td><code>Native call stack</code></td></tr>
-        <tr><td>Did I run out of video memory?</td><td><code>Engine state</code></td></tr>
-        <tr><td>Which mod's file failed to load?</td><td><code>Resource streaming</code></td></tr>
-        <tr><td>Loose files in my game folder?</td><td><code>Setup integrity</code></td></tr>
-      </tbody>
-    </table>
-    <p>When reporting a crash, attach the <code>.crash</code> file and the <code>.json</code> next to it. And remember that <code>Cyberpunk2077.exe + 0xNUMBERS</code> with no name is normal.</p>
+      <div class="handoff">
+        <div>
+          <h3>Send</h3>
+          <ul>
+            <li>The matching <code>.crash</code> file.</li>
+            <li>The matching <code>.crash.json</code> file.</li>
+            <li>Other matching files only when the person investigating asks for them.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Say</h3>
+          <ul>
+            <li>What you were doing.</li>
+            <li>Whether the same action repeats it.</li>
+            <li>The Crash ID.</li>
+            <li>What changed before it began.</li>
+          </ul>
+        </div>
+      </div>
 
-    <a class="back-top" href="#getting-started">top</a>
-  </section>
+      <div class="note-box">
+        <p>Read the files before posting them in public. The JSON includes your modlist and system details.</p>
+      </div>
+    </section>
 
-  <section class="doc" id="common-crashes">
-    <h1>Common crashes and fixes</h1>
-    <p>REDscope matches crashes against known signatures and groups each by the kind of problem it points to. Find the entry matching your <code>LIKELY CULPRIT</code> and follow the fix.</p>
+    <section class="guide-section" id="reference">
+      <p class="section-kicker">Open only what you need</p>
+      <h2>Reference</h2>
+      <p class="section-intro">The guide above is enough for most crashes. These sections cover installation, lower report sections, and mod-author details.</p>
 
-    <h2>Environmental</h2>
-    <p>Resource, driver, or setup problems. The fix is settings or hardware, not disabling one mod.</p>
+      <div class="reference-stack">
+        <details id="install-and-files">
+          <summary>Install and file locations</summary>
+          <div class="details-body">
+            <h3>Requirements</h3>
+            <ul>
+              <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/2380">RED4ext</a></li>
+              <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/107">Cyber Engine Tweaks</a> for the in-game panel</li>
+              <li><a href="https://www.nexusmods.com/cyberpunk2077/mods/1511">redscript</a> for script-stack coverage</li>
+            </ul>
+            <h3>Install</h3>
+            <p>Install REDscope through your mod manager like any other mod. There is nothing you must configure before it can write reports.</p>
+            <h3>Files</h3>
+            <p>Reports live in <code>red4ext/plugins/REDscope/crashes/</code>. Matching filenames belong to the same Capture ID.</p>
+          </div>
+        </details>
 
-    <h3>VRAM exhaustion</h3>
-    <p>Out of video memory: GPU memory at or near your card's total, OOM suspected. Lower texture quality, ray tracing, path tracing, and frame generation, and trim heavy texture mods.</p>
+        <details id="lower-sections">
+          <summary>What the lower report sections are for</summary>
+          <div class="details-body">
+            <h3>Registers</h3>
+            <p>Raw CPU values at the fault. A mod author may use them to follow bad pointers. Players do not need to decode them.</p>
+            <h3>Process memory</h3>
+            <p>Cyberpunk's working set, commit, virtual address space, and handle count. These measurements are context unless the report also identifies pressure or OOM.</p>
+            <h3>Loaded modules</h3>
+            <p>DLLs present in the process. Loaded does not mean responsible.</p>
+            <h3>Installed mods</h3>
+            <p>The text report gives a summary. The matching JSON contains the full list.</p>
+            <h3>Wrap chains</h3>
+            <p>RedScript methods modified by one or more mods. A high count is ambient setup context. A specific executing wrapped method is more useful.</p>
+          </div>
+        </details>
 
-    <h3>System memory exhaustion</h3>
-    <p>Out of system memory, OOM suspected. Close background apps, raise your Windows page file, reduce memory-heavy mods, add RAM if it recurs.</p>
+        <details id="special-crashes">
+          <summary>Special crash words</summary>
+          <div class="details-body">
+            <h3>Heap corruption</h3>
+            <p>The game noticed damaged memory. The code at the final fault may be innocent because the damage happened earlier. Repeated action and recent native changes matter more than the last address.</p>
+            <h3>Stack overflow</h3>
+            <p>Code called too deeply, often through recursion. Look for the same frames repeating.</p>
+            <h3>GPU device removed</h3>
+            <p>Windows reset the graphics device. Test stock clocks, current or rolled-back drivers, and lower GPU load before blaming a gameplay mod.</p>
+            <h3>In-page error</h3>
+            <p>Windows could not read a memory-backed page. Verify game files and check the game drive if it repeats.</p>
+          </div>
+        </details>
 
-    <h3>GPU timeout (device removed)</h3>
-    <p>The driver stopped responding and Windows reset it. Update or cleanly reinstall the GPU driver, drop any overclock, lower settings, and check for overheating.</p>
-
-    <h3>GPU driver fault</h3>
-    <p>The fault landed in a GPU driver DLL (for example <code>nvwgf2umx.dll</code> or <code>amdxc64.dll</code>). Update or cleanly reinstall (DDU) the driver, remove overclocks, and roll the driver back if the crash started right after an update.</p>
-
-    <h3>Upscaler or frame-generation fault</h3>
-    <p>The fault landed in an upscaling library (<code>nvngx_dlss.dll</code>, an FSR library, <code>libxess.dll</code>). Turn off Frame Generation or switch the upscaler. If you hand-swapped DLSS or FSR DLLs, restore the versions the modlist ships.</p>
-
-    <h3>Missing required framework</h3>
-    <p>A required dependency (RED4ext, Codeware, ArchiveXL, TweakXL) wasn't loaded. Install or repair it, confirm it loaded, and check load order and version.</p>
-
-    <h2>Memory</h2>
-    <p>Corrupted or mishandled memory. A mod can cause these, but the signature describes the failure, not the culprit.</p>
-
-    <h3>Heap corruption</h3>
-    <p>Something wrote where it shouldn't have. Usually a mod writing bad data: bisect the modlist (disable half, test, narrow down) and keep frameworks current.</p>
-
-    <h3>Stack buffer overrun</h3>
-    <p>Code wrote past a stack buffer and tripped the security check. Bisect the modlist, update frameworks, and report it to the author with the <code>.crash</code> file.</p>
-
-    <h3>In-page error</h3>
-    <p>The system couldn't read a memory page from disk, often failing storage or a corrupted file. Verify the game files, check the drive's health and free space, and re-download any mod whose files may be corrupted.</p>
-
-    <h2>Engine</h2>
-    <p>The engine's own behavior, often set off by script code.</p>
-
-    <h3>Stack overflow</h3>
-    <p>Code called itself until it ran out of stack, usually shown by the same frames repeating. Use those frames and the scripted stack to find the area, then disable the mod that touches it.</p>
-
-    <h3>Tooltip or text-format crash</h3>
-    <p>The fault landed in the text library (<code>icuuc.dll</code> / <code>icuin.dll</code>) with script code running. Suspect mods that change tooltips, descriptions, or UI text. Reproduce by hovering items, then disable tooltip and inventory mods one at a time.</p>
-
-    <h2>Mod</h2>
-    <h3>Item hover or tooltip crash</h3>
-    <p>The crash fired in the item-hover code (such as <code>OnItemDisplayHoverOver</code>) with the class scripted. Almost always an inventory or tooltip mod reacting to a specific item. Hover items to find the trigger and disable tooltip mods until it stops.</p>
-
-    <h2>Unknown</h2>
-    <p>Signatures that match a situation but can't name a confident culprit.</p>
-
-    <h3>Crash during startup</h3>
-    <p>The crash happened while the game was still starting (scripts not yet loaded). Usually load order or a framework problem: confirm frameworks are installed and current, check load order, and bisect recent additions.</p>
-
-    <h3>Game freeze (hang)</h3>
-    <p>The game stopped responding, caught by the hang watchdog rather than a crash. The stuck scripted frames show the area; disable the mod that touches it. If it lines up with heavy streaming or memory pressure, treat it with the memory steps above.</p>
-
-    <a class="back-top" href="#getting-started">top</a>
-  </section>
-
-  <section class="doc" id="for-mod-authors">
-    <h1>For mod authors</h1>
-    <p>A REDscope <code>.crash</code> gives you three things without a minidump or symbol server.</p>
-
-    <h3>A call stack attributed to your module</h3>
-    <p>Every native frame is tagged with its owning module, so a fault in your DLL shows as <code>YourMod.dll + 0xOFFSET</code> instead of an anonymous address. Game frames mostly show as <code>Cyberpunk2077.exe + 0xOFFSET</code> (only about 84 engine functions are named in the RED4ext address database), so the signal is which module faulted. If your code was running, the RedScript call stack shows the scripted frame that was live on the crashing thread, even when the fault is deep in a vanilla function you wrapped.</p>
-
-    <h3>A wrap-chain scan across the load order</h3>
-    <p>REDscope scans <code>@wrapMethod</code> annotations across every installed <code>.reds</code> file and reports the wrap chains, plus a top-mods-by-wrap-count summary. If your mod and another both wrap the same vanilla method, that's visible in the report.</p>
-
-    <h3>A breadcrumb API</h3>
-    <p>REDscope keeps a ring of recent breadcrumbs and prints the last entries next to the call stacks. Add your own for the moments that matter: menu opens, feature toggles, or right before and after an operation you suspect. The tag is capped at 15 characters and the message at 111, so put the important part first. Use a short, stable mod name, and note the call does nothing when REDscope isn't installed.</p>
-    <p>RedScript (the native is <code>module REDscope</code>; <code>tag</code> is a <code>String</code>):</p>
-    <pre><code>REDscope.Crumb("MyMod", "ApplyEffect target=" + ToString(target.GetID()));</code></pre>
-    <p>CET / Lua (reach it through <code>GetMod</code>):</p>
-    <pre><code>GetMod("REDscope").Crumb("MyMod-CET", "setting toggled: " .. tostring(key))</code></pre>
-
-    <a class="back-top" href="#getting-started">top</a>
-  </section>
-
+        <details id="mod-authors">
+          <summary>For mod authors</summary>
+          <div class="details-body">
+            <h3>Native attribution</h3>
+            <p>Native frames include the owning module and relative offset. Use the fault module, top stack frames, exception operation, and repeated fingerprint together.</p>
+            <h3>Structured sidecar</h3>
+            <p>The JSON sidecar keeps capture state, frames, module attribution, engine measurements, setup findings, mod changes, and the full mod inventory in machine-readable fields.</p>
+            <h3>Live state from CET</h3>
+            <p>Publish a small current value when it can explain a later crash. Updating a key replaces its old value.</p>
+            <pre><code>local rs = GetMod("REDscope")
+if rs then rs.SetState("MyMod.phase", tostring(phase)) end</code></pre>
+            <p>Use stable keys and short values. State is context. It does not change culprit scoring by itself.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
 </div>
+
+<footer class="site-footer">
+  <p>REDscope writes reports. It does not upload them. Keep the evidence, run one clear test, and let repeated results do the talking.</p>
+</footer>
 </body>
 </html>

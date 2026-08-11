@@ -1,21 +1,19 @@
 # REDscope
 
-A crash reporter for Cyberpunk 2077. When the game crashes, REDscope names the
-likely culprit and writes a plain-text `.crash` file (plus a `.crash.json`
+A crash logger for Cyberpunk 2077. When the game crashes, REDscope writes its
+highest-ranked lead to a plain-text `.crash` file (plus a `.crash.json`
 sidecar) with the call stacks, engine state, what the game was loading, recent
 log errors, and which mods changed since your last working launch.
 
-CDPR's built-in reporter collects a minidump but tells you nothing about why the
-game died. REDscope answers that in text you can read and paste into a bug
-thread.
+CDPR's built-in reporter collects a minidump. REDscope adds evidence you can
+read and paste into a bug thread.
 
 **[How to read a REDscope crash report &rarr;](https://qcargile.github.io/REDscope/)**
-&mdash; what each section means, the common crashes and their fixes, and notes
-for mod authors.
+&mdash; which clues matter, what they do not prove, and what to test next.
 
 ## What you get
 
-- A `LIKELY CULPRIT` line with a confidence rating and a verdict: a specific mod
+- A `LIKELY CULPRIT` line with a confidence rating and a lead: a specific mod
   DLL, the game's own code, a driver, or an out-of-memory condition.
 - A `CRASH ID` fingerprint, so you can tell whether a fix worked and quote it in
   a report. The in-game panel also flags when the same crash is recurring.
@@ -35,7 +33,7 @@ Attach both when you report a crash.
 ## Reading a crash in-game
 
 REDscope ships a Cyber Engine Tweaks panel that reads the latest crash without
-leaving the game: the verdict, the stack-module list, recent crashes, and whether
+leaving the game: the lead, the stack-module list, recent crashes, and whether
 the same crash keeps coming back. There is nothing to configure.
 
 ## Install
@@ -80,7 +78,7 @@ The defaults are fine. The knobs people ask about:
 REDscope keeps a ring of breadcrumbs and prints the last entries next to the call
 stacks. You can add your own from RedScript or CET for the moments that matter.
 See the
-[mod-author section of the guide](https://qcargile.github.io/REDscope/#for-mod-authors).
+[mod-author section of the guide](https://qcargile.github.io/REDscope/#mod-authors).
 
 ## License
 
