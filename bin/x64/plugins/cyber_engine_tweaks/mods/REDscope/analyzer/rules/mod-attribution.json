@@ -1,0 +1,13 @@
+[
+  {
+    "id": "MOD-CURATED-CONFLICT",
+    "name": "Curated archive conflict active",
+    "severity": 3,
+    "verdict": "mod",
+    "confidence": "medium",
+    "match": { "minSchema": 5, "curatedConflictActive": true },
+    "message": "Two or more installed mods are flagged as conflicting by the curated conflict database. This is a lead, not a confirmed crash cause - intentional base+patch pairs and benign overlaps can appear here.",
+    "fix": "Review the mods listed under archiveConflicts and keep one of each conflicting group; verify in-game before committing to a load-order change.",
+    "links": []
+  }
+]

@@ -1,0 +1,222 @@
+[
+  {
+    "id": "TEST-MOD-STACK",
+    "name": "Test: ModX present in stack",
+    "severity": 3,
+    "verdict": "mod",
+    "confidence": "medium",
+    "match": { "minSchema": 2, "stackModuleAny": ["ModX.dll"] },
+    "message": "ModX appears in the crash stack.",
+    "fix": "Disable ModX to confirm.",
+    "links": []
+  },
+  {
+    "id": "TEST-MOD-SCRIPTED",
+    "name": "Test: scripted frame substring",
+    "severity": 3,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "scriptedFrameAny": ["BadMod."] },
+    "message": "A BadMod scripted frame is on the stack.",
+    "fix": "Disable BadMod.",
+    "links": []
+  },
+  {
+    "id": "TEST-MOD-COMBO",
+    "name": "Test: fault in ModX with no safe.dll present",
+    "severity": 6,
+    "verdict": "mod",
+    "confidence": "high",
+    "match": { "faultingModuleAny": ["ModX.dll"], "stackModuleNone": ["safe.dll"] },
+    "message": "Fault inside ModX with no safe.dll on the stack.",
+    "fix": "Disable ModX.",
+    "links": []
+  },
+  {
+    "id": "TEST-STACK-ALL",
+    "name": "Test: a.dll AND b.dll both in stack",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 2, "stackModuleAll": ["a.dll", "b.dll"] },
+    "message": "Both a.dll and b.dll are on the stack.",
+    "fix": "Test a.dll and b.dll.",
+    "links": []
+  },
+  {
+    "id": "TEST-SCRIPTED-ALL",
+    "name": "Test: Foo. AND Bar. scripted frames",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "scriptedFrameAll": ["Foo.", "Bar."] },
+    "message": "Both Foo and Bar scripted frames present.",
+    "fix": "Test Foo and Bar.",
+    "links": []
+  },
+  {
+    "id": "TEST-SCRIPTED-NONE",
+    "name": "Test: TestClass crash with no evil. frame",
+    "severity": 2,
+    "verdict": "engine",
+    "confidence": "low",
+    "match": { "crashClassAny": ["TestClass"], "scriptedFrameNone": ["evil."] },
+    "message": "TestClass crash and no evil frame present.",
+    "fix": "None.",
+    "links": []
+  },
+  {
+    "id": "TEST-ENGINESTATE",
+    "name": "Test: crash during Initialization",
+    "severity": 2,
+    "verdict": "environmental",
+    "confidence": "low",
+    "match": { "engineStateAny": ["Initialization"] },
+    "message": "Crash occurred during engine Initialization.",
+    "fix": "Check load order and init-time mods.",
+    "links": []
+  },
+  {
+    "id": "TEST-INSTALLED",
+    "name": "Test: ModY installed",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "installedModAny": ["ModY"] },
+    "message": "ModY is installed.",
+    "fix": "Test ModY.",
+    "links": []
+  },
+  {
+    "id": "TEST-FAULT-X",
+    "name": "Test: fault inside never.dll",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "faultingModuleAny": ["never.dll"] },
+    "message": "Fault inside never.dll.",
+    "fix": "Should never match a null faulting module.",
+    "links": []
+  },
+  {
+    "id": "TEST-OOM-BASIS",
+    "name": "Test: oomBasis contains 'vram'",
+    "severity": 2,
+    "verdict": "memory",
+    "confidence": "low",
+    "match": { "minSchema": 3, "oomBasisContains": ["vram"] },
+    "message": "Oom basis matched 'vram'.",
+    "fix": "Reduce texture pack.",
+    "links": []
+  },
+  {
+    "id": "TEST-TWEAKDB-RECORD",
+    "name": "Test: tweakDb lookup for Items.Test1",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 3, "tweakDbRecordAny": ["Items.Test1"] },
+    "message": "TweakDB lookup of Items.Test1 observed.",
+    "fix": "Inspect Items.Test1 caller.",
+    "links": []
+  },
+  {
+    "id": "TEST-STATUS-EFFECT",
+    "name": "Test: status effect applied/removed for BaseStatusEffect.Test",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 3, "statusEffectRecordAny": ["BaseStatusEffect.Test"] },
+    "message": "A BaseStatusEffect.Test change was observed.",
+    "fix": "Inspect the mod that applies BaseStatusEffect.Test.",
+    "links": []
+  },
+  {
+    "id": "TEST-FIND-ENTITY-NULL",
+    "name": "Test: findEntityNulls caller substring 'MyMod'",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 3, "findEntityNullCallerAny": ["MyMod"] },
+    "message": "MyMod caller hit FindEntityByID null.",
+    "fix": "Inspect MyMod entity-id lifecycle.",
+    "links": []
+  },
+  {
+    "id": "TEST-DELAY-CALLBACK",
+    "name": "Test: recentDelay callback substring 'BadMod'",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 3, "recentDelayCallbackAny": ["BadMod"] },
+    "message": "BadMod queued a delay before the crash.",
+    "fix": "Inspect BadMod's delay callbacks.",
+    "links": []
+  },
+  {
+    "id": "TEST-WRAP-LAYER-MOD",
+    "name": "Test: wrap layer mod 'ConflictMod' present",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 3, "wrapLayerModAny": ["ConflictMod"] },
+    "message": "ConflictMod wrapped a method in the crash stack.",
+    "fix": "Inspect ConflictMod's wrap on the named method.",
+    "links": []
+  },
+  {
+    "id": "TEST-INSTALLED-VERSION",
+    "name": "Test: installed mod exact-version match",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 3, "installedModVersionMatches": [ { "name": "PinnedMod", "version": "1.0.5" } ] },
+    "message": "PinnedMod 1.0.5 is installed.",
+    "fix": "Update PinnedMod past 1.0.5.",
+    "links": []
+  },
+  {
+    "id": "TEST-INFLIGHT-CLASS",
+    "name": "Test: object in flight of class gamedataItem_Record",
+    "severity": 2,
+    "verdict": "engine",
+    "confidence": "low",
+    "match": { "minSchema": 4, "inFlightClassAny": ["gamedataItem_Record"] },
+    "message": "A gamedataItem_Record object was in the crashing thread's registers.",
+    "fix": "Inspect item/TweakDB mods touching that record.",
+    "links": []
+  },
+  {
+    "id": "TEST-INFLIGHT-MODFIELDS",
+    "name": "Test: in-flight object carries mod-added fields",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 4, "inFlightClassHasModFields": true },
+    "message": "An object in the registers carries mod-added scripted fields.",
+    "fix": "Inspect the mods that @addField the named class.",
+    "links": []
+  },
+  {
+    "id": "TEST-CONFLICT-GROUP",
+    "name": "Test: curated conflict group contains ModA",
+    "severity": 2,
+    "verdict": "mod",
+    "confidence": "low",
+    "match": { "minSchema": 5, "conflictGroupAny": ["ModA"] },
+    "message": "ModA appears in an active curated conflict group.",
+    "fix": "Test ModA against the other mods in its group.",
+    "links": []
+  },
+  {
+    "id": "TEST-SETUP-ISSUES",
+    "name": "Test: setup integrity has any issue",
+    "severity": 2,
+    "verdict": "environmental",
+    "confidence": "low",
+    "match": { "minSchema": 5, "setupHasIssues": true },
+    "message": "The setup-integrity scan flagged at least one issue.",
+    "fix": "Review the setupIntegrity issues.",
+    "links": []
+  }
+]

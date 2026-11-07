@@ -1,0 +1,168 @@
+[
+  {
+    "id": "ENG-STACK-OVERFLOW",
+    "name": "Stack overflow (infinite recursion / excessive call depth)",
+    "severity": 5,
+    "verdict": "engine",
+    "confidence": "high",
+    "match": { "exceptionCodeAny": ["0xC00000FD"] },
+    "message": "Infinite recursion or excessive call depth. The faulting frame is the symptom site, not the cause; look for repeating frames in the native stack.",
+    "fix": "Identify the repeating call chain. If a mod's frames repeat, disable that mod.",
+    "links": []
+  },
+  {
+    "id": "ENG-HEAP-CORRUPTION",
+    "name": "Heap corruption",
+    "severity": 5,
+    "verdict": "memory",
+    "confidence": "high",
+    "match": { "exceptionCodeAny": ["0xC0000374"] },
+    "message": "Heap corruption detected. The real culprit corrupted memory earlier in the session; the crash address is only where it was noticed, so the faulting module is not the suspect.",
+    "fix": "Bisect mods that touch native code or memory. Check the breadcrumb tail and the loaded-mod set for recently-active mods.",
+    "links": []
+  },
+  {
+    "id": "ENG-STACK-BUFFER-OVERRUN",
+    "name": "Stack buffer overrun (/GS check failed)",
+    "severity": 5,
+    "verdict": "memory",
+    "confidence": "high",
+    "match": { "exceptionCodeAny": ["0xC0000409"] },
+    "message": "A stack buffer overrun tripped the /GS security cookie. The offending function is in the frames near the faulting address.",
+    "fix": "Identify the module owning the frames near the fault. If it is a mod, disable it.",
+    "links": []
+  },
+  {
+    "id": "ENG-IN-PAGE-ERROR",
+    "name": "In-page error (backing store read failed)",
+    "severity": 4,
+    "verdict": "memory",
+    "confidence": "medium",
+    "match": { "exceptionCodeAny": ["0xC0000006"] },
+    "message": "A memory page failed to load from its backing store. Possible causes: a bad disk sector, a disconnected drive, or a corrupted memory-mapped file.",
+    "fix": "Verify game file integrity, check the drive the game is installed on, and retry after a clean reboot.",
+    "links": []
+  },
+  {
+    "id": "ENG-GPU-TDR",
+    "name": "GPU device removed/reset (TDR)",
+    "severity": 4,
+    "verdict": "environmental",
+    "confidence": "low",
+    "match": { "exceptionCodeAny": ["0x887A0005", "0x887A0006", "0x887A0007"] },
+    "message": "The GPU was removed or reset (a Timeout Detection and Recovery event). This is a driver/hardware/overclock crash, not a mod.",
+    "fix": "Clean-install the GPU drivers, revert any GPU overclock, and check thermals and power delivery.",
+    "links": []
+  },
+  {
+    "id": "ENG-UPSCALER-DLL-FAULT",
+    "name": "Crash inside a DLSS / FSR / XeSS upscaler or frame-gen DLL",
+    "severity": 4,
+    "verdict": "environmental",
+    "confidence": "medium",
+    "match": { "faultingModuleAny": ["nvngx_dlss.dll", "nvngx_dlssg.dll", "nvngx_dlssd.dll", "sl.interposer.dll", "libxess.dll", "libxess_fg.dll", "libxell.dll", "ffx_fsr3upscaler_x64.dll", "ffx_frameinterpolation_x64.dll", "ffx_opticalflow_x64.dll", "ffx_fsr3_x64.dll", "amd_ags_x64.dll"] },
+    "message": "The crash faulted inside an upscaler / frame-generation DLL (DLSS, DLSS-G Frame Generation, Ray Reconstruction, FSR, or XeSS). That is the GPU render pipeline, not a mod - though a mod that pushes the GPU harder (heavy textures, extra effects) can make it fire more often. The live render settings and GPU driver are shown in this report.",
+    "fix": "Toggle DLSS / Frame Generation / Ray Reconstruction off, lower the internal resolution, cap the framerate, and update or roll back the GPU driver. If it only happens with certain mods loaded, test those - recurrence and co-occurring mods are shown when this crash repeats.",
+    "links": []
+  },
+  {
+    "id": "ENG-GPU-DRIVER-DLL-FAULT",
+    "name": "Crash inside the GPU usermode driver",
+    "severity": 4,
+    "verdict": "environmental",
+    "confidence": "medium",
+    "match": { "faultingModuleAny": ["nvwgf2umx.dll", "nvd3dumx.dll", "nvrtum64.dll", "nvgpucomp64.dll", "atidxx64.dll", "amdxc64.dll", "igdumdim64.dll", "igd10iumd64.dll"] },
+    "message": "The crash faulted inside the GPU usermode driver - the rasterizer (nvwgf2umx/nvd3dumx), the ray-tracing driver (nvrtum64), or the shader compiler (nvgpucomp64). This is a driver/hardware crash, not a mod - though heavy GPU content (path tracing, ray reconstruction, 4K textures) can trigger it more often. The GPU driver version and live render settings are shown in this report.",
+    "fix": "Clean-reinstall the current GPU driver (use DDU for a full wipe) and clear the shader cache. In-game, turn off Path Tracing and Ray Reconstruction (the heaviest ray-tracing paths) and Frame Generation to test, and revert any GPU overclock/undervolt. If a clean reinstall does not resolve it, try a different driver version. If it only happens with certain mods loaded, those mods are stressing the driver, not corrupting it.",
+    "links": []
+  },
+  {
+    "id": "ENG-OOM-VRAM",
+    "name": "VRAM exhaustion at crash",
+    "severity": 5,
+    "verdict": "environmental",
+    "confidence": "high",
+    "match": { "minSchema": 3, "oomSuspected": true, "oomBasisContains": ["vram"] },
+    "message": "Video memory was at or near its budget when the crash fired. This is a VRAM exhaustion crash; the most likely cause is texture-heavy content the GPU cannot hold.",
+    "fix": "Lower the in-game texture quality, reduce 4K/8K texture mods, and check that no other GPU-heavy app is running.",
+    "links": []
+  },
+  {
+    "id": "ENG-OOM-COMMIT",
+    "name": "Process commit exhaustion at crash",
+    "severity": 5,
+    "verdict": "environmental",
+    "confidence": "high",
+    "match": { "minSchema": 3, "oomSuspected": true, "oomBasisContains": ["commit"] },
+    "message": "System committed memory was at or near its limit when the crash fired. Either the modlist is too memory-heavy for the available RAM + pagefile, or another app is consuming committed memory.",
+    "fix": "Reduce the modlist's memory footprint (especially archive-heavy or scripted-heavy mods), close background apps, and check the system pagefile size.",
+    "links": []
+  },
+  {
+    "id": "ENG-OOM-SUSPECTED",
+    "name": "Out of memory / VRAM exhaustion suspected",
+    "severity": 4,
+    "verdict": "environmental",
+    "confidence": "low",
+    "match": { "oomSuspected": true },
+    "suppressedBy": ["ENG-OOM-VRAM", "ENG-OOM-COMMIT"],
+    "message": "Memory or VRAM was near-exhausted at crash time. This is an environmental out-of-memory condition, not necessarily a specific mod.",
+    "fix": "Lower texture and streaming settings, reduce the modlist's memory footprint, and check available system RAM and VRAM headroom.",
+    "links": []
+  },
+  {
+    "id": "ENG-ICU-SCRIPTED-STRING-FORMAT",
+    "name": "ICU text-formatter crash on a scripted thread",
+    "severity": 4,
+    "verdict": "engine",
+    "confidence": "medium",
+    "match": { "faultingModuleAny": ["icuuc.dll", "icuin.dll"], "crashClassAny": ["scripted"] },
+    "message": "The crash faulted inside the ICU Unicode text formatter while a scripted call was in flight. Almost always a buffer-overrun caused by a custom field on a vanilla data class that a scripted handler then asks vanilla code to format (e.g. a mod adds float values to a record where vanilla expects none, then a tooltip path tries to format them).",
+    "fix": "Investigate the innermost scripted frame and the mod whose package the script is touching. If a recently-added mod started feeding custom fields into vanilla records, that is the lead.",
+    "links": []
+  },
+  {
+    "id": "ENG-TOOLTIP-HOVER-SCRIPTED",
+    "name": "Crash on item hover / tooltip resolution",
+    "severity": 4,
+    "verdict": "mod",
+    "confidence": "medium",
+    "match": { "scriptedFrameAny": ["OnItemDisplayHoverOver", "ShowTooltipsForItemData", "RequestItemInspected", "OnTooltipShow", "OnItemHoverOver"], "crashClassAny": ["scripted"] },
+    "message": "The crash fired on the item-hover/tooltip surface. Most common causes: a broken TweakDB record lookup, a missing ResourcePath/icon CName, a NULL itemRecord dereference, or a mod adding fields to a record that vanilla cannot format.",
+    "fix": "Open inventory and hover items one category at a time to narrow the offending item. Disable mods that touch item TweakDB records or tooltip injectors.",
+    "links": []
+  },
+  {
+    "id": "ENG-INIT-TIME-CRASH",
+    "name": "Crash during engine initialization",
+    "severity": 4,
+    "verdict": "unknown",
+    "confidence": "medium",
+    "match": { "engineStateAny": ["BaseInitialization", "Initialization", "EarlyInitialization", "PostInitialization"] },
+    "message": "The crash fired while the engine was still initializing - before gameplay started. Init-time crashes are caused by mod load order or broken plugin DLLs, not by gameplay state.",
+    "fix": "Bisect the load order: disable the bottom half of the mod list, then narrow. Check red4ext.log and the CET load log for plugin-load failures around the crash time.",
+    "links": []
+  },
+  {
+    "id": "ENG-HANG-FREEZE",
+    "name": "Game freeze / hang (no exception)",
+    "severity": 4,
+    "verdict": "unknown",
+    "confidence": "low",
+    "match": { "crashClassAny": ["Hang"] },
+    "message": "The game stopped responding without an exception - a freeze/deadlock, detected by REDscope's watchdog after no scripted activity for the timeout window. A hang produces no fault, so there is no faulting address; the scripted functions that were last running (the leads) are where to look.",
+    "fix": "If a specific mod's scripted function is named below and recurs across multiple hangs, disable that mod. Freezes during streaming or loading can also be environmental (disk stalls, GPU driver hangs).",
+    "links": []
+  },
+  {
+    "id": "ENG-SETUP-MISSING-FRAMEWORK",
+    "name": "A required framework is not loaded",
+    "severity": 5,
+    "verdict": "environmental",
+    "confidence": "high",
+    "match": { "minSchema": 5, "setupIssueKindAny": ["missing-framework"] },
+    "message": "Installed mods need a framework (Cyber Engine Tweaks or TweakXL) that is not loaded. Those mods do nothing and the mismatch can crash the game - common after a game update that breaks a framework. This is a setup problem, not a specific mod's fault.",
+    "fix": "Reinstall or update the named framework and confirm it loads (check the red4ext and CET logs at startup). See the setupIntegrity section for which framework is missing.",
+    "links": []
+  }
+]
