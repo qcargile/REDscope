@@ -5,51 +5,8 @@ local GameUI = require("GameUI")
 
 local REDscope = {}
 
-local cachedCrumb = nil
 local cachedSetState = nil
-local lookupAttempted = false
 local setStateLookupAttempted = false
-
-local kCandidateKeys = {
-    "Crumb",
-    "Crumb;StringString",
-    "REDscope.Crumb",
-}
-
-local function ResolveCrumb()
-    if lookupAttempted then return cachedCrumb end
-    lookupAttempted = true
-    for _, key in ipairs(kCandidateKeys) do
-        local ok, fn = pcall(function() return Game[key] end)
-        if ok and fn then
-            cachedCrumb = fn
-            return cachedCrumb
-        end
-    end
-    print("[REDscope] WARNING: Crumb native lookup failed for all candidate keys. "
-        .. "Lua-side breadcrumbs will be silent no-ops. Verify REDscope.dll loaded "
-        .. "and 'REDscope.Crumb registered as native global function' appears in "
-        .. "REDscope-internal.log.")
-    return nil
-end
-
-function REDscope.BoundKey()
-    ResolveCrumb()
-    if not cachedCrumb then return nil end
-    for _, key in ipairs(kCandidateKeys) do
-        local ok, fn = pcall(function() return Game[key] end)
-        if ok and fn == cachedCrumb then return key end
-    end
-    return "(unknown)"
-end
-
-function REDscope.Crumb(tag, message)
-    if type(tag) ~= "string" then tag = tostring(tag) end
-    if type(message) ~= "string" then message = tostring(message) end
-    local fn = ResolveCrumb()
-    if not fn then return end
-    pcall(fn, tag, message)
-end
 
 local function ResolveSetState()
     if setStateLookupAttempted then return cachedSetState end
@@ -288,7 +245,7 @@ end
 registerForEvent("onInit", function()
     local ok = pcall(function() GameUI.Listen(pushContext) end)
     if not ok then
-        print("[REDscope] GameUI.Listen failed; scene/loading/johnny context breadcrumbs disabled.")
+        print("[REDscope] GameUI.Listen failed; scene/loading/johnny context state disabled.")
     end
 end)
 registerForEvent("onOverlayOpen", Panel.onOverlayOpen)

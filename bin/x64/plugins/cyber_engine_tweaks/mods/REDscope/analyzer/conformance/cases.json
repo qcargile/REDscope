@@ -257,22 +257,9 @@
       "crashClass": "AccessViolation",
       "engineState": { "state": "Running", "oomSuspected": false },
       "scriptedFrames": [], "stackModules": [], "installedMods": [],
-      "objectsInFlight": [{ "reg": "RCX", "className": "gamedataItem_Record", "modFields": 0 }]
+      "objectsInFlight": [{ "reg": "RCX", "className": "gamedataItem_Record" }]
     },
     "expected": { "topMatchId": "TEST-INFLIGHT-CLASS", "matchIds": ["TEST-INFLIGHT-CLASS"], "leadModules": [] }
-  },
-  {
-    "name": "in-flight-mod-fields",
-    "sidecar": {
-      "schema": 4, "crashId": "INFL0002",
-      "exception": { "code": "0xC0000005", "address": "0x140000500" },
-      "faultingModule": { "name": "Cyberpunk2077.exe", "rva": "0x500" },
-      "crashClass": "AccessViolation",
-      "engineState": { "state": "Running", "oomSuspected": false },
-      "scriptedFrames": [], "stackModules": [], "installedMods": [],
-      "objectsInFlight": [{ "reg": "RBX", "className": "PlayerPuppet", "modFields": 3 }]
-    },
-    "expected": { "topMatchId": "TEST-INFLIGHT-MODFIELDS", "matchIds": ["TEST-INFLIGHT-MODFIELDS"], "leadModules": [] }
   },
   {
     "name": "in-flight-schema-gated-below-4",
@@ -283,7 +270,7 @@
       "crashClass": "AccessViolation",
       "engineState": { "state": "Running", "oomSuspected": false },
       "scriptedFrames": [], "stackModules": [], "installedMods": [],
-      "objectsInFlight": [{ "reg": "RCX", "className": "gamedataItem_Record", "modFields": 5 }]
+      "objectsInFlight": [{ "reg": "RCX", "className": "gamedataItem_Record" }]
     },
     "expected": { "topMatchId": null, "matchIds": [], "leadModules": [] }
   },

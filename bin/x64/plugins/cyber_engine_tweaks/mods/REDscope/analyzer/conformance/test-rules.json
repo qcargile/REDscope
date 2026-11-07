@@ -187,17 +187,6 @@
     "links": []
   },
   {
-    "id": "TEST-INFLIGHT-MODFIELDS",
-    "name": "Test: in-flight object carries mod-added fields",
-    "severity": 2,
-    "verdict": "mod",
-    "confidence": "low",
-    "match": { "minSchema": 4, "inFlightClassHasModFields": true },
-    "message": "An object in the registers carries mod-added scripted fields.",
-    "fix": "Inspect the mods that @addField the named class.",
-    "links": []
-  },
-  {
     "id": "TEST-CONFLICT-GROUP",
     "name": "Test: curated conflict group contains ModA",
     "severity": 2,

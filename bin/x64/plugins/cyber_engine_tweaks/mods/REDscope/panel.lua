@@ -1,6 +1,5 @@
 local Bridge = require("analyzerBridge")
 local Diagnostic = require("diagnostic")
-local RsdbReader = require("dictionary/rsdbReader")
 
 local Panel = {}
 
@@ -251,76 +250,9 @@ local function renderObjectsInFlight(sidecar)
     local oif = sidecar.objectsInFlight
     if type(oif) ~= "table" or #oif == 0 then return end
     if ImGui.CollapsingHeader("Objects in the crashing thread's registers") then
-        wrappedCol(COL_DIM, "RTTI classes REDscope identified in the CPU registers at the fault - what the engine was operating on. A class carrying mod-added fields is a lead toward the mod that extends it, not a verdict.")
+        wrappedCol(COL_DIM, "RTTI classes REDscope identified in the CPU registers at the fault - what the engine was operating on.")
         for _, o in ipairs(oif) do
-            local mf = tonumber(o.modFields) or 0
             ImGui.Text(tostring(o.reg or "?") .. "  " .. tostring(o.className or "?"))
-            if mf > 0 then
-                ImGui.SameLine()
-                textCol(COL_MED, "+" .. tostring(mf) .. " mod field" .. (mf == 1 and "" or "s"))
-            end
-        end
-    end
-end
-
-local dictState = { tried = false, dict = nil }
-local function getDict()
-    if dictState.tried then return dictState.dict end
-    dictState.tried = true
-    local ok, d = pcall(RsdbReader.open, "dictionary/redscope-paths.rsdb")
-    if ok then dictState.dict = d end
-    return dictState.dict
-end
-
-local resolvedCache = {}
-local function resolveHash(dict, hash)
-    if dict == nil then return nil end
-    local key = tostring(hash)
-    local cached = resolvedCache[key]
-    if cached ~= nil then
-        if cached == false then return nil end
-        return cached
-    end
-    local ok, p = pcall(RsdbReader.lookup, dict, key)
-    if ok and type(p) == "string" and #p > 0 then
-        resolvedCache[key] = p
-        return p
-    end
-    resolvedCache[key] = false
-    return nil
-end
-
-local function renderResourceLoader(sidecar)
-    local rl = sidecar.resourceLoader
-    if type(rl) ~= "table" then return end
-    local failed = rl.failed
-    local inFlight = rl.inFlight
-    local hasFailed = type(failed) == "table" and #failed > 0
-    local hasInFlight = type(inFlight) == "table" and #inFlight > 0
-    if not hasFailed and not hasInFlight then return end
-    if ImGui.CollapsingHeader("Resource streaming at crash") then
-        wrappedCol(COL_DIM, "Resources the engine was loading within ~500ms of the crash, resolved to file paths. A failed resource is a lead toward a corrupted or edited asset, not proof of cause.")
-        local dict = getDict()
-        if dict == nil then
-            wrappedCol(COL_DIM, "(path dictionary not installed - showing raw hashes)")
-        end
-        if hasFailed then
-            textCol(COL_HEAD, "Failed to load (" .. tostring(rl.failedTotal or #failed) .. "):")
-            for _, e in ipairs(failed) do
-                local h = tostring(e.hash)
-                local path = resolveHash(dict, h)
-                local line = "  " .. (path or h)
-                if e.error ~= nil then line = line .. "  (error " .. tostring(e.error) .. ")" end
-                if path ~= nil then textCol(COL_MED, line) else ImGui.Text(line) end
-            end
-        end
-        if hasInFlight then
-            textCol(COL_HEAD, "In flight (" .. tostring(rl.inFlightTotal or #inFlight) .. "):")
-            for _, h0 in ipairs(inFlight) do
-                local h = tostring(h0)
-                local path = resolveHash(dict, h)
-                ImGui.Text("  " .. (path or h))
-            end
         end
     end
 end
@@ -629,7 +561,6 @@ function Panel.draw()
             renderMatches(state.result)
             renderLeads(state.result, state.grouping)
             renderObjectsInFlight(state.sidecar)
-            renderResourceLoader(state.sidecar)
             renderStackDetail(state.sidecar)
             renderCallStackMods(state.sidecar)
             renderWrapChains(state.sidecar)
